@@ -1,7 +1,8 @@
 # Redux-Astroglide
 
-#### Squeezing a huge package into a tiny space
-&nbsp;      
+#### Taking the pain out of state management and squeezing a huge package into a tiny API
+
+Astroglide is a set of configuration and automation tools built on top of Redux Toolkit in order to provide the most succinct API with the least boilerplate possible. It's the easiest way to get up and running with redux state, and has the lowest mental overhead of any state management tool for React.
 
 ## Installation
 
@@ -15,13 +16,13 @@ npm install redux-astroglide
 
 # Yarn
 yarn add redux-astroglide
- 
+
 # PNPM
 pnpm add redux-astroglide
 
 ```
-&nbsp;      
 
+&nbsp;
 
 ## Setup
 
@@ -34,12 +35,11 @@ import configure from "redux-astroglide";
 const { store, createSlice } = configure({
   // ... (configureStore options
 });
-
 ```
-&nbsp;      
 
-[ Learn more about RTK's configureStore function ](https://redux-toolkit.js.org/usage/usage-with-typescript#configurestore)
+&nbsp;
 
+[Learn more about RTK's configureStore function](https://redux-toolkit.js.org/usage/usage-with-typescript#configurestore)
 
 Now just create a slice anywhere in your application and in addition to the actions created by Redux Toolkit you'll get some memoized selectors and hooks from Astroglide:
 
@@ -48,7 +48,8 @@ import { createSlice } from "../../app/store";
 
 const slice = createSlice(
   "LoginForm", // reducer namespace
-  { // initial state
+  {
+    // initial state
     username: "",
     password: "",
   }
@@ -58,8 +59,8 @@ export const { setPassword, setUsername } = slice.actions;
 export const { selectUsername, selectPassword } = slice.selectors;
 export const { useUsername, usePassword } = slice.hooks;
 ```
-&nbsp;      
 
+&nbsp;
 
 You can also create the slice using [the same API specified by RTK](https://redux-toolkit.js.org/usage/usage-with-typescript#createslice).
 
@@ -74,10 +75,10 @@ const slice = createSlice({
     // custom reducers are the most likely reason to use this syntax
   },
   // other RTK functionality can go here
-})
+});
 ```
-&nbsp;      
 
+&nbsp;
 
 ## Usage
 
@@ -87,15 +88,33 @@ These hooks can be used in a React component with the same API as React's setSta
 export const UsernameField = (props) => {
   const [username, setUsername] = useUsername();
 
-  return <input
-    name="username"
-    type="text"
-    value={username}
-    onChange={e=> setUsername(e.target.value)} // this triggers a redux action
-  />
-}
+  return (
+    <input
+      name="username"
+      type="text"
+      value={username}
+      onChange={(e) => setUsername(e.target.value)} // this triggers a redux action
+    />
+  );
+};
 ```
-&nbsp;      
+
+&nbsp;
+
+The setter actions can be passed a function to receive a copy of the latest state value, just like with React's setState:
+
+```jsx
+<input
+  //...
+  onChange={(e) =>
+    setUsername((currentUsername) =>
+      isValid(e.target.value) ? e.target.value : currentUsername
+    )
+  }
+/>
+```
+
+&nbsp;
 
 Astroglide's createSlice exposes global domain selectors and setters, if you need something like that:
 
@@ -108,51 +127,71 @@ export { useSlice } = slice.hooks;
 export { selectSlice } = slice.selectors;
 export { setSlice } = slice.actions; // will not conflict with existing `slice` prop actions
 ```
-&nbsp;      
 
-
-The setter actions can be passed a function to receive a copy of the latest state value, just like with React's setState:
-
-```jsx
-<input
- //...
- onChange={e => setUsername(currentUsername => 
-  isValid(e.target.value) ? e.target.value : currentUsername
- )}
-/>
-```
-&nbsp;      
-
+&nbsp;
 
 The hooks can also be used outside of a React component (like in a thunk or saga) by destructuring the `select` and `update` props. This allows your reducer file to export as few variables as possible:
 
 ```jsx
 // thunk.js
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { useUsername, usePassword } from "./slice";
 
-const loginThunk = createAsyncThunk("login", async (
-  args,
-  { dispatch, getState }
-  )=> {
+import { useUsername, usePassword } from "./slice";
+// OR
+import {
+  selectUsername,
+  setUsername,
+  selectPassword,
+  setPassword,
+} from "./slice";
+
+const loginThunk = createAsyncThunk(
+  "login",
+  async (args, { dispatch, getState }) => {
     const username = useUsername.select(getState());
     const password = usePassword.select(getState());
     // logic ...
-      dispatch(useUsername.update("newUsername"));
+    dispatch(useUsername.update("newUsername"));
     // ...
 
     // OR
 
-    const username = selectUsername(getState)
-    const password = selectPassword(getState)
+    const username = selectUsername(getState());
+    const password = selectPassword(getState());
     // logic ...
-      dispatch(setUsername("newUsername"))
+    dispatch(setUsername("newUsername"));
     // ...
-
   }
-)
+);
+
+// saga.js
+import { select, put } from "redux-saga/effects";
+
+import { useUsername, usePassword } from "./slice";
+// OR
+import {
+  selectUsername,
+  setUsername,
+  selectPassword,
+  setPassword,
+} from "./slice";
+
+function* loginSaga(action) {
+  const username = yield select(useUsername.select);
+  const password = yield select(usePassword.select);
+  // logic ...
+  yield put(useUsername.update("newUsername"));
+
+  // OR
+
+  const username = yield select(selectUsername);
+  const password = yield select(selectPassword);
+  // logic ...
+  yield put(setUsername("newUsername"));
+}
 ```
-&nbsp;      
+
+&nbsp;
 
 Astroglide also provides some of its internal helper functions you may find useful:
 
@@ -164,10 +203,11 @@ export const {
   createSlice,
   injectReducer,
   injectSlice,
-  injectMiddleware
+  injectMiddleware,
 } = configure();
 ```
-&nbsp;      
+
+&nbsp;
 
 ## Plugins
 
@@ -177,21 +217,27 @@ Astroglide ships with a handful of plugins you can use for things like typecheck
 // Login/slice.js
 const slice = createSlice("Login", {
   username: type(PropType.string, ""),
-  password: type(PropTypes.string, "", { shouldPreventUpdate: true })
+  password: type(PropTypes.string, "", { shouldPreventUpdate: true }),
 });
 
 // Nav/slice.js
 const slice = createSlice("Nav", {
-  isOpen: type(PropTypes.bool, persist("", {
-    storageType: localStorage
-  })),
-  clickCount: type(PropTypes.number, set((value) => value + 1)),
+  isOpen: type(
+    PropTypes.bool,
+    persist("", {
+      storageType: localStorage,
+    })
+  ),
+  clickCount: type(
+    PropTypes.number,
+    set((value) => value + 1)
+  ),
 });
 ```
-&nbsp;      
+
+&nbsp;
 
 These plugins can be loaded by adding this to your Astroglide configuration:
-
 
 ```jsx
 import configure, { addPlugins } from "redux-astroglide";
@@ -210,8 +256,8 @@ export const [set, type, persist] = addPlugins(
 
 export const { store, createSlice } = configure();
 ```
-&nbsp;      
 
+&nbsp;
 
 ## Custom Plugins
 
@@ -234,22 +280,23 @@ addPlugin({
     return value;
   },
 })
-// or 
+// or
 addPlugins({
   // plugin 1
 }, {
   // plugin 2
 })
- 
+
 ```
-&nbsp;      
+
+&nbsp;
 
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-&nbsp;      
+&nbsp;
+
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
-

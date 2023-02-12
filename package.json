@@ -1,6 +1,6 @@
 {
   "name": "redux-astroglide",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Taking the pain out of redux state",
   "keywords": [
     "boilerplate",
@@ -8,13 +8,13 @@
     "rollup",
     "typescript"
   ],
-  "homepage": "https://github.com/Mulletware/ui-library-boilerplate.git",
+  "homepage": "https://github.com/Mulletware/redux-astroglide.git",
   "bugs": {
-    "url": "https://github.com/Mulletware/ui-library-boilerplate.git/issues"
+    "url": "https://github.com/Mulletware/redux-astroglide.git/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Mulletware/ui-library-boilerplate.git"
+    "url": "git+https://github.com/Mulletware/redux-astroglide.git"
   },
   "license": "MIT",
   "author": "Dustin Schultz <dmanke@gmail.com>",
@@ -44,7 +44,9 @@
   "module": "./dist/index.es.js",
   "browser": "./dist/index.umd.js",
   "types": "./dist/types",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "BUILD_ENV=dev npm run build:js -- --watch",
     "build": "rimraf dist && npm run build:types && npm run build:js",
