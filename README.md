@@ -1,8 +1,10 @@
 # Redux-Astroglide
 
-#### Taking the pain out of state management and squeezing a huge package into a tiny API
+#### Taking the pain out of state management by squeezing a huge package into a tiny API
 
 Astroglide is a set of configuration and automation tools built on top of Redux Toolkit in order to provide the most succinct API with the least boilerplate possible. It's the easiest way to get up and running with redux state, and has the lowest mental overhead of any state management tool for React.
+
+We stay DRY so you don't have to.
 
 ## Installation
 
@@ -222,22 +224,16 @@ const slice = createSlice("Login", {
 
 // Nav/slice.js
 const slice = createSlice("Nav", {
-  isOpen: type(
-    PropTypes.bool,
-    persist("", {
-      storageType: localStorage,
-    })
-  ),
-  clickCount: type(
-    PropTypes.number,
-    set((value) => value + 1)
-  ),
+  isOpen: persist("", {
+    storageType: localStorage,
+  }),
+  clickCount: set((value) => value + 1),
 });
 ```
 
 &nbsp;
 
-These plugins can be loaded by adding this to your Astroglide configuration:
+These plugins are loaded by adding this to your Astroglide configuration:
 
 ```jsx
 import configure, { addPlugins } from "redux-astroglide";
@@ -255,6 +251,28 @@ export const [set, type, persist] = addPlugins(
 );
 
 export const { store, createSlice } = configure();
+```
+
+Plugins like persist also export their own tools:
+
+```ts
+import {
+  getPersistedValue,
+  storePersistedValue,
+} from "redux-astroglide/plugins/persist";
+
+const currentValue = getPersistedValue(
+  "isOpen",
+  "Nav"
+  // storageType: localStorage | sessionStorage | { getItem, setItem }
+);
+
+storePersistedValue(
+  "isOpen",
+  "Nav",
+  true
+  // storageType: localStorage | sessionStorage { getItem, setItem }
+);
 ```
 
 &nbsp;

@@ -41,9 +41,7 @@ export const getPersistedValue = (
     scope = scope?.[namespace];
   }
 
-  const retValue = scope?.[key];
-  console.log("retValue: ", retValue);
-  return retValue;
+  return scope?.[key];
 };
 
 export default ({
