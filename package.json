@@ -3,10 +3,11 @@
   "version": "0.1.6",
   "description": "Taking the pain out of redux state management",
   "keywords": [
-    "boilerplate",
-    "library",
-    "rollup",
-    "typescript"
+    "redux",
+    "flux",
+    "state",
+    "typescript",
+    "react"
   ],
   "homepage": "https://github.com/Mulletware/redux-astroglide.git",
   "bugs": {

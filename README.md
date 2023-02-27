@@ -307,6 +307,8 @@ addPlugins({
 
 ```
 
+Note: This import style uses a package.json `exports` field which is still not supported in some environments. If the nested imports like `redux-astroglide/plugins` can't be found in your project try importing them from `redux-astroglide/dist/plugins` and `redux-astroglide/dist/plugins/set` etc.
+
 &nbsp;
 
 ## Contributing

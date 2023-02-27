@@ -1,6 +1,9 @@
 import type { PluginClass, sliceConfig } from "../plugins.d";
 import type { Storage } from "./types.d";
 
+const localStorage = window.localStorage;
+const isLocalStorageAvaialble = !!localStorage;
+
 const PERSISTENCE_KEY = `astroglide-persist`;
 
 export const getPersistedStore = (storage: Storage = localStorage) => {
@@ -47,6 +50,11 @@ export const getPersistedValue = (
 export default ({
   storageType = localStorage,
 }: { storageType?: Storage } = {}) => {
+  if (!isLocalStorageAvaialble) {
+    console.warn(
+      "localStorage is not available! You must provide your own storage to persist"
+    ); // eslint-disable-line no-console
+  }
   return {
     setup(plugin: PluginClass, { sliceConfig }: { sliceConfig: sliceConfig }) {
       return {
