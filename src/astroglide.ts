@@ -28,6 +28,9 @@ type ExtendedSlice = Slice & {
 export const configure = ({
   middleware,
   reducer,
+  devTools,
+  preloadedState,
+  enhancers,
   ...staticReducers
 }: ConfigureStoreOptions) => {
   const store = configureStore({
@@ -41,6 +44,9 @@ export const configure = ({
         : middleware || []),
       injectableMiddleware,
     ],
+    devTools,
+    preloadedState,
+    enhancers,
   });
 
   const { makePropertySelectorsFromSlice } = configureSelectors(store);
@@ -198,14 +204,16 @@ export const configure = ({
   ) => {
     const shorthandParams = typeof name === "object";
 
-    return createAutomatedSlice(
+    const params = [
       // @ts-ignore
       ...(shorthandParams
         ? [name, initialState, rtkConfig]
         : [{ ...rtkConfig, name, initialState }]),
 
-      shorthandParams ? astroglideConfigOverrides : initialState
-    );
+      shorthandParams ? astroglideConfigOverrides : initialState,
+    ];
+
+    return createAutomatedSlice(...params);
   };
 
   return {

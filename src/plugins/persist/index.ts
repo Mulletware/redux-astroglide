@@ -1,17 +1,21 @@
 import type { PluginClass, sliceConfig } from "../plugins.d";
 import type { Storage } from "./types.d";
 
-const localStorage = window.localStorage;
+const localStorage = (window || {}).localStorage;
 const isLocalStorageAvaialble = !!localStorage;
 
 const PERSISTENCE_KEY = `astroglide-persist`;
 
-export const getPersistedStore = (storage: Storage = localStorage) => {
-  const result = storage.getItem(PERSISTENCE_KEY);
+let defaultStorageType: Storage = localStorage;
+
+export const getPersistedStore = async (
+  storage: Storage = defaultStorageType
+) => {
+  const result = await storage.getItem(PERSISTENCE_KEY);
   return JSON.parse(result || "{}");
 };
 
-export const storePersistedValue = (
+export const storePersistedValue = async (
   key: string,
   namespace?: string,
   value?: any,
@@ -27,7 +31,7 @@ export const storePersistedValue = (
   }
 
   try {
-    storage.setItem(PERSISTENCE_KEY, JSON.stringify(store));
+    await storage.setItem(PERSISTENCE_KEY, JSON.stringify(store));
   } catch (e) {
     console.error(e);
   }
@@ -36,8 +40,9 @@ export const storePersistedValue = (
 export const getPersistedValue = (
   key: string,
   namespace?: string,
-  storage: Storage = localStorage
+  _storage?: Storage
 ) => {
+  const storage = _storage || defaultStorageType;
   let scope = getPersistedStore(storage);
 
   if (namespace) {
@@ -48,13 +53,16 @@ export const getPersistedValue = (
 };
 
 export default ({
-  storageType = localStorage,
+  storageType = defaultStorageType,
 }: { storageType?: Storage } = {}) => {
-  if (!isLocalStorageAvaialble) {
+  if (!isLocalStorageAvaialble && !storageType) {
     console.warn(
       "localStorage is not available! You must provide your own storage to persist"
     ); // eslint-disable-line no-console
   }
+
+  defaultStorageType = storageType;
+
   return {
     setup(plugin: PluginClass, { sliceConfig }: { sliceConfig: sliceConfig }) {
       return {
