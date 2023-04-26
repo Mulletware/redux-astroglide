@@ -1,30 +1,30 @@
 # Redux-Astroglide
 
-#### Taking the pain out of state management by squeezing a huge package into a tiny API
+#### Taking the pain out of state management by stuffing a huge package into a tiny API
 
 Astroglide is a set of configuration and automation tools built on top of Redux Toolkit in order to provide the most succinct API with the least boilerplate possible. It's the easiest way to get up and running with redux state, and has the lowest mental overhead of any state management tool for React.
 
 We stay DRY so you don't have to.
 
+&nbsp;
+
 ## Installation
-
-Follow the installation instructions for your app from [@reduxjs/toolkit](https://github.com/reduxjs/redux-toolkit#installation)
-
-Now install Astroglide:
 
 ```bash
 # NPM
-npm install redux-astroglide
+npm install @reduxjs/toolkit redux-astroglide
 
 # Yarn
-yarn add redux-astroglide
+yarn add @reduxjs/toolkit redux-astroglide
 
 # PNPM
-pnpm add redux-astroglide
+pnpm add @reduxjs/toolkit redux-astroglide
 
 ```
 
-&nbsp;
+If you're using React, you must also install `react-redux` as a dependency.
+
+[@reduxjs/toolkit docs](https://github.com/reduxjs/redux-toolkit#installation)
 
 ## Setup
 
@@ -64,7 +64,7 @@ export const { useUsername, usePassword } = slice.hooks;
 
 &nbsp;
 
-You can also create the slice using [the same API specified by RTK](https://redux-toolkit.js.org/usage/usage-with-typescript#createslice).
+Alternatively, you can create the slice using [the same API specified by RTK](https://redux-toolkit.js.org/usage/usage-with-typescript#createslice).
 
 ```jsx
 const slice = createSlice({
@@ -82,9 +82,23 @@ const slice = createSlice({
 
 &nbsp;
 
+Now wrap your app (or the relevant portion for this redux store) in a Provider from react-redux if you're using React
+
+```js
+// App.js
+import { Provider } from "react-redux";
+import { store } from "../app/store";
+
+export default () => (
+  <Provider store={store}>{/* the rest of your app */}</Provider>
+);
+```
+
+&nbsp;
+
 ## Usage
 
-These hooks can be used in a React component with the same API as React's setState:
+The generated hooks can be used in a React component with the same API as React's setState:
 
 ```jsx
 export const UsernameField = (props) => {
@@ -203,9 +217,9 @@ const configure = "redux-astroglide";
 export const {
   store,
   createSlice,
-  injectReducer,
-  injectSlice,
-  injectMiddleware,
+  injectReducer, // injectReducer(key: string, state => state: reducer fn, optionally async)
+  injectSlice, // injectSlice(slice: result from createSlice())
+  injectMiddleware, // injectMiddleware(middleware: redux middleware)
 } = configure();
 ```
 
@@ -225,7 +239,7 @@ const slice = createSlice("Login", {
 // Nav/slice.js
 const slice = createSlice("Nav", {
   isOpen: persist("", {
-    storageType: localStorage,
+    storageType: localStorage, // default localStorage, must match localStorage API
   }),
   clickCount: set((value) => value + 1),
 });
