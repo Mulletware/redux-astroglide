@@ -10,10 +10,7 @@ let defaultStorageType: Storage = localStorage;
 
 export const getPersistedStore = async (
   storage: Storage = defaultStorageType
-) => {
-  const result = await storage.getItem(PERSISTENCE_KEY);
-  return JSON.parse(result || "{}");
-};
+) => JSON.parse((await storage.getItem(PERSISTENCE_KEY)) || "{}");
 
 export const storePersistedValue = async (
   key: string,
@@ -21,7 +18,7 @@ export const storePersistedValue = async (
   value?: any,
   storage: Storage = localStorage
 ) => {
-  const store = getPersistedStore(storage);
+  const store = await getPersistedStore(storage);
 
   if (namespace) {
     store[namespace] = store[namespace] || {};
