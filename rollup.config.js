@@ -4,5 +4,6 @@ export default makeExportedPackages(
   "plugins",
   "plugins/set",
   "plugins/type",
-  "plugins/persist"
+  "plugins/persist",
+  "createSelectorHook"
 );
