@@ -71,6 +71,8 @@ export const configure = (store) => {
       return slice.actions[actionName](...params);
     };
 
+    updateAction.toString = () => slice.actions[actionName].toString();
+
     if (!updateAction) {
       throw Error(`Action ${slice.name}/${actionName} not defined`);
     }

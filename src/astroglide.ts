@@ -78,7 +78,7 @@ export const configure = ({
 
       const activePlugins: PluginData[] = [];
 
-      while (foundIndex > -1) {
+      while (foundIndex != -1) {
         activePlugins.push({
           data: {
             sliceConfig,
@@ -96,13 +96,14 @@ export const configure = ({
 
       let value = item;
 
-      activePlugins.forEach(({ data, plugin }) => {
+      for (const { data, plugin } of activePlugins) {
         value = plugin.getInitialValue(value, {
           config: plugin.config,
           plugin,
+          key,
           ...data,
         });
-      });
+      }
 
       sliceConfig.initialState[key] = value;
       pluginData[key] = activePlugins;
@@ -160,12 +161,14 @@ export const configure = ({
       return params;
     };
 
-    const updateFn = (...args) =>
+    const updateFn = (...args: any[]) =>
       slice.actions[sliceSetterKey](
         // call the modifier fn here
         // @ts-ignore
         ...getParams(...args)
       );
+
+    updateFn.toString = () => slice.actions[sliceSetterKey].toString();
 
     /* eslint-disable react-hooks/rules-of-hooks */
     hooks[domainHookKey] = () => {
