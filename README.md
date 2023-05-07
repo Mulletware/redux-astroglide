@@ -239,7 +239,7 @@ const slice = createSlice("Login", {
 // Nav/slice.js
 const slice = createSlice("Nav", {
   isOpen: persist("", {
-    storageType: localStorage, // default localStorage, must match localStorage API
+    storageType: localStorage, // default localStorage, must provide { getItem(key):any, setItem(key, value):void } API (async not allowed)
   }),
   clickCount: set((value) => value + 1),
 });

@@ -8,17 +8,16 @@ const PERSISTENCE_KEY = `astroglide-persist`;
 
 let defaultStorageType: Storage = localStorage;
 
-export const getPersistedStore = async (
-  storage: Storage = defaultStorageType
-) => JSON.parse((await storage.getItem(PERSISTENCE_KEY)) || "{}");
+export const getPersistedStore = (storage: Storage = defaultStorageType) =>
+  JSON.parse(storage.getItem(PERSISTENCE_KEY) || "{}");
 
-export const storePersistedValue = async (
+export const storePersistedValue = (
   key: string,
   namespace?: string,
   value?: any,
   storage: Storage = localStorage
 ) => {
-  const store = await getPersistedStore(storage);
+  const store = getPersistedStore(storage);
 
   if (namespace) {
     store[namespace] = store[namespace] || {};
@@ -28,7 +27,7 @@ export const storePersistedValue = async (
   }
 
   try {
-    await storage.setItem(PERSISTENCE_KEY, JSON.stringify(store));
+    storage.setItem(PERSISTENCE_KEY, JSON.stringify(store));
   } catch (e) {
     console.error(e);
   }
@@ -69,7 +68,11 @@ export default ({
     },
 
     getInitialValue(value, { sliceConfig, key }) {
-      const existingPersistedValue = getPersistedValue(key, sliceConfig.name);
+      const existingPersistedValue = getPersistedValue(
+        key,
+        sliceConfig.name,
+        storageType
+      );
 
       if (existingPersistedValue !== undefined) {
         return existingPersistedValue;
@@ -79,14 +82,16 @@ export default ({
     },
 
     update(value, { key, sliceConfig }) {
+      // debugger;
       storePersistedValue(
         key,
         sliceConfig.name,
         value,
-        this.config.storageType !== undefined
-          ? this.config.storageType
-          : storageType
+        storageType !== undefined
+          ? storageType
+          : this.config.storageType || defaultStorageType
       );
+
       return value;
     },
   };
