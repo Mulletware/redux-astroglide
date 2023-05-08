@@ -82,7 +82,6 @@ export default ({
     },
 
     update(value, { key, sliceConfig }) {
-      // debugger;
       storePersistedValue(
         key,
         sliceConfig.name,

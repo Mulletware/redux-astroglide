@@ -1,7 +1,7 @@
 import { useSelector, shallowEqual } from "react-redux";
 import { createDraftSafeSelector as createSelector } from "@reduxjs/toolkit";
-import { useAction } from "./actions";
-import { getSetterActionName } from "./reducers";
+import { useAction } from "../actions";
+import { getSetterActionName } from "../reducers";
 import get from "lodash/get";
 import upperFirst from "lodash/upperFirst";
 import type { Action, Selector } from "@reduxjs/toolkit";
@@ -17,6 +17,16 @@ export const makeSelectorFactoryHook = (selectorFactory) => (args) =>
 export const createSelectorUpdateHook =
   (selector: Selector, action: Action) => () =>
     [useSelector(selector), useAction(action, undefined)];
+
+export const createSelectorHook = (...args: [any]) => {
+  // creates a redux selector and a react hook that produce identical results
+  const selector: any = createSelector(...args);
+  const hook: any = makeSelectorHook(selector);
+
+  hook.select = selector;
+
+  return hook;
+};
 
 export const makeQuerySelectors = (endpoint, defaultValue) => {
   // a data selector is used when loading state is irrelevant

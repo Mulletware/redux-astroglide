@@ -24,6 +24,10 @@
       "import": "./dist/index.es.js",
       "require": "./dist/index.js"
     },
+    "./selectors": {
+      "import": "./dist/selectors/index.es.js",
+      "require": "./dist/selectors/index.js"
+    },
     "./plugins": {
       "import": "./dist/plugins/index.es.js",
       "require": "./dist/plugins/index.js"
@@ -50,7 +54,7 @@
   ],
   "scripts": {
     "dev": "BUILD_ENV=dev npm run build:js -- --watch",
-    "build": "rimraf dist && npm run build:types && npm run build:js",
+    "build": "rimraf dist &&  npm run build:js && npm run build:types",
     "build:js": "rollup -c",
     "build:types": "tsc --emitDeclarationOnly",
     "prepare": "husky install"

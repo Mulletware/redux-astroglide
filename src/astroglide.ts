@@ -1,8 +1,8 @@
-import { configureStore } from "@reduxjs/toolkit";
-import { createSlice } from "@reduxjs/toolkit";
+import { configureStore, createSlice } from "@reduxjs/toolkit";
 import map from "lodash/map";
 import reduce from "lodash/reduce";
 import upperFirst from "lodash/upperFirst";
+import { useSelector } from "react-redux";
 import {
   injectableMiddleware,
   injectMiddleware,
@@ -10,13 +10,13 @@ import {
 import { useAction } from "./actions";
 
 import {
-  injectSlice as _injectSlice,
   injectReducer as _injectReducer,
+  injectSlice as _injectSlice,
   makeSetterReducersFromInitialState,
 } from "./reducers";
 
-import { configure as configureSelectors } from "./selectors";
 import { plugins } from "./plugins/service";
+import { configure as configureSelectors } from "./selectors";
 
 import type { ConfigureStoreOptions, Slice } from "@reduxjs/toolkit";
 
@@ -173,6 +173,7 @@ export const configure = ({
     /* eslint-disable react-hooks/rules-of-hooks */
     hooks[domainHookKey] = () => {
       return [
+        useSelector(selectDomain),
         useAction(slice.actions[sliceSetterKey], undefined)(...getParams()), // prop updater
         useAction(slice.actions.__override__slice__caution, undefined), // state overwriter
       ];
