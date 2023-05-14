@@ -53,7 +53,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "BUILD_ENV=dev npm run build:js -- --watch",
+    "start": "BUILD_ENV=dev npm run build:js -- --watch",
     "build": "rimraf dist &&  npm run build:js && npm run build:types",
     "build:js": "rollup -c",
     "build:types": "tsc --emitDeclarationOnly",

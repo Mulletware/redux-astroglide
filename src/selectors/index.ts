@@ -87,9 +87,9 @@ export const configure = (store) => {
       throw Error(`Action ${slice.name}/${actionName} not defined`);
     }
 
-    const useState = () => [
+    const useState = (setterCb = (value) => value) => [
       useSelector(selector),
-      useAction(updateAction, undefined),
+      useAction((value) => updateAction(setterCb(value)), undefined),
     ];
 
     useState.select = selector;

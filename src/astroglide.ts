@@ -1,4 +1,9 @@
-import { configureStore, createSlice } from "@reduxjs/toolkit";
+import {
+  ReducersMapObject,
+  combineReducers,
+  configureStore,
+  createSlice,
+} from "@reduxjs/toolkit";
 import map from "lodash/map";
 import reduce from "lodash/reduce";
 import upperFirst from "lodash/upperFirst";
@@ -27,17 +32,14 @@ type ExtendedSlice = Slice & {
 
 export const configure = ({
   middleware,
-  reducer,
   devTools,
   preloadedState,
   enhancers,
   ...staticReducers
 }: ConfigureStoreOptions) => {
   const store = configureStore({
-    ...(Object.keys(staticReducers).length
-      ? staticReducers
-      : { reducer: reducer || ((state = {}) => state) }),
-    // @ts-ignore
+    // @ts-ignore-next-line
+    reducer: combineReducers(staticReducers),
     middleware: (getDefaultMiddleware) => [
       ...(typeof middleware === "function"
         ? middleware(getDefaultMiddleware)
@@ -193,6 +195,7 @@ export const configure = ({
         })),
         (a, b) => ({ ...a, ...b })
       ),
+      ...(slice.selectors || {}), // RTK implemented selectors after astroglide was created, some people may not have them
     };
 
     injectSlice(slice);

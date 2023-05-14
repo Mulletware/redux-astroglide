@@ -1,8 +1,8 @@
 # Redux-Astroglide
 
-#### Taking the pain out of state management by stuffing a huge package into a tiny API
+#### Redux doesn't need to be such a pain the butt!
 
-Astroglide is a set of configuration and automation tools built on top of Redux Toolkit in order to provide the most succinct API with the least boilerplate possible. It's the easiest way to get up and running with redux state, and has the lowest mental overhead of any state management tool for React.
+Redux-Astroglide is a set of configuration and automation tools built on top of Redux Toolkit in order to provide the most succinct API with the least boilerplate possible. It's the easiest way to get up and running with redux state, and has the lowest mental overhead of any state management tool for React.
 
 We stay DRY so you don't have to.
 
@@ -13,10 +13,14 @@ We stay DRY so you don't have to.
 ```bash
 # NPM
 npm install @reduxjs/toolkit redux-astroglide
+```
 
+```bash
 # Yarn
 yarn add @reduxjs/toolkit redux-astroglide
+```
 
+```bash
 # PNPM
 pnpm add @reduxjs/toolkit redux-astroglide
 
@@ -54,10 +58,11 @@ const slice = createSlice(
     // initial state
     username: "",
     password: "",
+    count: 0,
   }
 );
 
-export const { setPassword, setUsername } = slice.actions;
+export const { setUsername, setPassword } = slice.actions;
 export const { selectUsername, selectPassword } = slice.selectors;
 export const { useUsername, usePassword } = slice.hooks;
 ```
@@ -72,6 +77,7 @@ const slice = createSlice({
   initialState: {
     username: "",
     password: "",
+    count: 0,
   },
   reducers: {
     // custom reducers are the most likely reason to use this syntax
@@ -109,10 +115,23 @@ export const UsernameField = (props) => {
       name="username"
       type="text"
       value={username}
-      onChange={(e) => setUsername(e.target.value)} // this triggers a redux action
+      onChange={
+        (e) => setUsername(e.target.value) // dispatch a redux action named "LoginForm/setUsername"
+      }
     />
   );
 };
+```
+
+You can pass a function to the hook to assign a custom value setter for that instance of the hook:
+
+```jsx
+// component.js
+function Component() {
+  const [count, increment] = useCount((currentCount) => currentCount + 1);
+
+  // ...
+}
 ```
 
 &nbsp;
@@ -209,7 +228,7 @@ function* loginSaga(action) {
 
 &nbsp;
 
-Astroglide also provides some of its internal helper functions you may find useful:
+Astroglide also provides some of its internal helper functions:
 
 ```jsx
 const configure = "redux-astroglide";
@@ -217,6 +236,7 @@ const configure = "redux-astroglide";
 export const {
   store,
   createSlice,
+
   injectReducer, // injectReducer(key: string, state => state: reducer fn, optionally async)
   injectSlice, // injectSlice(slice: result from createSlice())
   injectMiddleware, // injectMiddleware(middleware: redux middleware)
@@ -227,7 +247,7 @@ export const {
 
 ## Plugins
 
-Astroglide ships with a handful of plugins you can use for things like typechecking and data persistence:
+Astroglide comes with plugins you can use for typechecking, data persistence and custom value and state setters:
 
 ```jsx
 // Login/slice.js
@@ -238,10 +258,14 @@ const slice = createSlice("Login", {
 
 // Nav/slice.js
 const slice = createSlice("Nav", {
-  isOpen: persist("", {
-    storageType: localStorage, // default localStorage, must provide { getItem(key):any, setItem(key, value):void } API (async not allowed)
+  token: persist("", {
+    storageType: localStorage, // default localStorage, or API passed to setup fn, must provide { getItem(key):any, setItem(key, value):void } API (async not allowed)
   }),
   clickCount: set((value) => value + 1),
+  instanceCount: set((value, { draft }) => {
+    draft.clickCount = 0;
+    return value + 1;
+  }),
 });
 ```
 
@@ -255,13 +279,18 @@ import configure, { addPlugins } from "redux-astroglide";
 import setPlugin from "redux-astroglide/plugins/set";
 import typePlugin from "redux-astroglide/plugins/type";
 import persistPlugin from "redux-astroglide/plugins/persist";
-// these can also be imported collectively like:
+// these can also be imported like:
 // import { set, type, persist } = "redux-astroglide/plugins";
 
 export const [set, type, persist] = addPlugins(
   setPlugin(),
   typePlugin({ shouldPreventUpdate: false }),
-  persistPlugin()
+  persistPlugin({
+    storageType: { // defaults to localStorage (async storage not allowed)
+      getItem(key: string),
+      setItem(key: string, value: string)}
+    }
+  )
 );
 
 export const { store, createSlice } = configure();
@@ -278,7 +307,8 @@ import {
 const currentValue = getPersistedValue(
   "isOpen",
   "Nav"
-  // storageType: localStorage | sessionStorage | { getItem, setItem }
+  // storageType: localStorage | sessionStorage |
+  // { getItem(key: string), setItem(key: string, value:string) }
 );
 
 storePersistedValue(

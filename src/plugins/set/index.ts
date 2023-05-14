@@ -1,7 +1,7 @@
 export default (callback: (value: any, { draft }) => any) => ({
-  constructor(callback, value) {
+  constructor(innerCallback, value) {
     this.value = value;
-    this.callback = callback;
+    this.callback = innerCallback || callback;
   },
   update(value, { draft, plugin }) {
     return plugin.callback(value, { draft });
