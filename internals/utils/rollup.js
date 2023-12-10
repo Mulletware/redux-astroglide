@@ -13,7 +13,7 @@ const plugins = [
   nodeResolve({ extensions }),
   commonjs(),
   babel({ extensions }),
-  process.env.BUILD_ENV !== "dev" && terser(),
+  // process.env.BUILD_ENV !== "dev" && terser(),
 ];
 
 export const modifyPath = (path, subpath, name) =>

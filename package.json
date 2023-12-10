@@ -1,6 +1,6 @@
 {
   "name": "redux-astroglide",
-  "version": "0.1.12",
+  "version": "0.1.20",
   "description": "Taking the pain out of redux state management",
   "keywords": [
     "redux",
@@ -19,38 +19,13 @@
   },
   "license": "MIT",
   "author": "Dustin Schultz <dmanke@gmail.com>",
-  "exports": {
-    ".": {
-      "import": "./dist/index.es.js",
-      "require": "./dist/index.js"
-    },
-    "./selectors": {
-      "import": "./dist/selectors/index.es.js",
-      "require": "./dist/selectors/index.js"
-    },
-    "./plugins": {
-      "import": "./dist/plugins/index.es.js",
-      "require": "./dist/plugins/index.js"
-    },
-    "./plugins/set": {
-      "import": "./dist/plugins/set/index.es.js",
-      "require": "./dist/plugins/set/index.js"
-    },
-    "./plugins/type": {
-      "import": "./dist/plugins/type/index.es.js",
-      "require": "./dist/plugins/type/index.js"
-    },
-    "./plugins/persist": {
-      "import": "./dist/plugins/persist/index.es.js",
-      "require": "./dist/plugins/persist/index.js"
-    }
-  },
   "main": "./dist/index.js",
   "module": "./dist/index.es.js",
   "browser": "./dist/index.umd.js",
   "types": "./dist/types",
   "files": [
-    "dist"
+    "dist/*",
+    "plugins/*"
   ],
   "scripts": {
     "start": "BUILD_ENV=dev npm run build:js -- --watch",
