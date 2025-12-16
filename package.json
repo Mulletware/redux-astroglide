@@ -32,7 +32,10 @@
     "build": "rimraf dist &&  npm run build:js && npm run build:types",
     "build:js": "rollup -c",
     "build:types": "tsc --emitDeclarationOnly",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -65,8 +68,16 @@
     "@semantic-release/github": "8.0.4",
     "@semantic-release/npm": "9.0.1",
     "@semantic-release/release-notes-generator": "10.0.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^30.0.0",
     "@types/lodash": "4.14.182",
     "husky": "^8.0.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "jest-localstorage-mock": "^2.4.26",
     "lint-staged": "^12.4.2",
     "prettier": "^2.6.2",
     "prop-types": "^15.8.1",
@@ -74,6 +85,7 @@
     "rollup": "^2.74.1",
     "rollup-plugin-terser": "^7.0.2",
     "semantic-release": "19.0.3",
+    "ts-jest": "^29.4.6",
     "typescript": "^4.7.2"
   },
   "peerDependencies": {
