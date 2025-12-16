@@ -78,6 +78,8 @@ export default ({
         return existingPersistedValue;
       }
 
+      // Store initial value to localStorage for consistency across sessions
+      storePersistedValue(key, sliceConfig.name, value, storageType);
       return value;
     },
 
