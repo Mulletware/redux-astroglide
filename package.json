@@ -1,6 +1,6 @@
 {
   "name": "redux-astroglide",
-  "version": "0.1.20",
+  "version": "0.1.22",
   "description": "Taking the pain out of redux state management",
   "keywords": [
     "redux",
@@ -19,23 +19,61 @@
   },
   "license": "MIT",
   "author": "Dustin Schultz <dmanke@gmail.com>",
+  "type": "commonjs",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.js"
+    },
+    "./plugins": {
+      "types": "./dist/types/plugins/index.d.ts",
+      "import": "./dist/plugins/index.es.js",
+      "require": "./dist/plugins/index.js"
+    },
+    "./plugins/set": {
+      "types": "./dist/types/plugins/set/index.d.ts",
+      "import": "./dist/plugins/set/index.es.js",
+      "require": "./dist/plugins/set/index.js"
+    },
+    "./plugins/type": {
+      "types": "./dist/types/plugins/type/index.d.ts",
+      "import": "./dist/plugins/type/index.es.js",
+      "require": "./dist/plugins/type/index.js"
+    },
+    "./plugins/persist": {
+      "types": "./dist/types/plugins/persist/index.d.ts",
+      "import": "./dist/plugins/persist/index.es.js",
+      "require": "./dist/plugins/persist/index.js"
+    },
+    "./selectors": {
+      "types": "./dist/types/selectors/index.d.ts",
+      "import": "./dist/selectors/index.es.js",
+      "require": "./dist/selectors/index.js"
+    }
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.es.js",
   "browser": "./dist/index.umd.js",
-  "types": "./dist/types",
+  "types": "./dist/types/index.d.ts",
   "files": [
-    "dist/*",
-    "plugins/*"
+    "dist"
   ],
   "scripts": {
     "start": "BUILD_ENV=dev npm run build:js -- --watch",
-    "build": "rimraf dist &&  npm run build:js && npm run build:types",
+    "build": "rimraf dist && npm run build:js && npm run build:types",
     "build:js": "rollup -c",
     "build:types": "tsc --emitDeclarationOnly",
     "prepare": "husky install",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "sync:exports": "node scripts/sync-exports.js",
+    "validate:exports": "node scripts/validate-exports.js",
+    "test:exports": "node scripts/test-exports.js",
+    "lint:package": "publint",
+    "prepack": "npm run validate:exports && npm run lint:package",
+    "prepublishOnly": "npm run build && npm run test:exports"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -81,6 +119,7 @@
     "lint-staged": "^12.4.2",
     "prettier": "^2.6.2",
     "prop-types": "^15.8.1",
+    "publint": "^0.2.0",
     "rimraf": "^3.0.2",
     "rollup": "^2.74.1",
     "rollup-plugin-terser": "^7.0.2",

@@ -83,7 +83,8 @@ const makePackageJsonExports = (packages) => {
 export const makeExportedPackages = (...packages) => {
   packages = [undefined, ...packages];
 
-  console.log(makePackageJsonExports(packages));
+  // Note: exports field is managed by scripts/sync-exports.js
+  // Run `npm run sync:exports` to update package.json exports
 
   return packages.map((pkg) => makeExportedPackage(pkg)).flat();
 };

@@ -1,9 +1,4 @@
-import {
-  ReducersMapObject,
-  combineReducers,
-  configureStore,
-  createSlice,
-} from "@reduxjs/toolkit";
+import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
 import map from "lodash/map";
 import reduce from "lodash/reduce";
 import upperFirst from "lodash/upperFirst";
@@ -220,6 +215,7 @@ export const configure = ({
       shorthandParams ? astroglideConfigOverrides : initialState,
     ];
 
+    // @ts-ignore - params is dynamically constructed based on shorthand vs normal call
     return createAutomatedSlice(...params);
   };
 
