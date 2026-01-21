@@ -36,9 +36,10 @@ function generateExportsField(subpackages) {
     const typesPath = pkg ? `./dist/types/${pkg}` : "./dist/types";
 
     // Note: "types" must be first for TypeScript compatibility
+    // ESM files use .mjs extension for proper module resolution
     exports[exportPath] = {
       types: `${typesPath}/index.d.ts`,
-      import: `${distPath}/index.es.js`,
+      import: `${distPath}/index.mjs`,
       require: `${distPath}/index.js`,
     };
   }

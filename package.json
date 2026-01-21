@@ -23,37 +23,37 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/index.es.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
     "./plugins": {
       "types": "./dist/types/plugins/index.d.ts",
-      "import": "./dist/plugins/index.es.js",
+      "import": "./dist/plugins/index.mjs",
       "require": "./dist/plugins/index.js"
     },
     "./plugins/set": {
       "types": "./dist/types/plugins/set/index.d.ts",
-      "import": "./dist/plugins/set/index.es.js",
+      "import": "./dist/plugins/set/index.mjs",
       "require": "./dist/plugins/set/index.js"
     },
     "./plugins/type": {
       "types": "./dist/types/plugins/type/index.d.ts",
-      "import": "./dist/plugins/type/index.es.js",
+      "import": "./dist/plugins/type/index.mjs",
       "require": "./dist/plugins/type/index.js"
     },
     "./plugins/persist": {
       "types": "./dist/types/plugins/persist/index.d.ts",
-      "import": "./dist/plugins/persist/index.es.js",
+      "import": "./dist/plugins/persist/index.mjs",
       "require": "./dist/plugins/persist/index.js"
     },
     "./selectors": {
       "types": "./dist/types/selectors/index.d.ts",
-      "import": "./dist/selectors/index.es.js",
+      "import": "./dist/selectors/index.mjs",
       "require": "./dist/selectors/index.js"
     }
   },
   "main": "./dist/index.js",
-  "module": "./dist/index.es.js",
+  "module": "./dist/index.mjs",
   "browser": "./dist/index.umd.js",
   "types": "./dist/types/index.d.ts",
   "files": [
