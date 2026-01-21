@@ -18,12 +18,175 @@ import {
 import { plugins } from "./plugins/service";
 import { configure as configureSelectors } from "./selectors";
 
-import type { ConfigureStoreOptions, Slice } from "@reduxjs/toolkit";
+import type {
+  Slice,
+  Reducer,
+  Action,
+  Dispatch,
+  Store,
+  CaseReducer,
+  PayloadAction,
+} from "@reduxjs/toolkit";
 
-type ExtendedSlice = Slice & {
-  hooks: object;
-  selectors: object;
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+/** Capitalize first letter of a string type */
+type Capitalize<S extends string> = S extends `${infer F}${infer R}`
+  ? `${Uppercase<F>}${R}`
+  : S;
+
+// ============================================================================
+// Hook Types
+// ============================================================================
+
+/** Return type for hooks - [value, setter, extras] */
+type HookReturn<T> = [
+  T,
+  (value: T | ((prev: T) => T)) => void,
+  { dispatch: Dispatch; toggle?: T extends boolean ? () => void : never }
+];
+
+/** A hook with static methods for non-component usage */
+interface SliceHook<T> {
+  (setterCb?: (value: T) => T): [T, (value: T | ((prev: T) => T)) => void];
+  select: (state: any) => T;
+  update: (value: T | ((prev: T) => T)) => Action;
+}
+
+/** Generate hook types from initial state - creates useFieldName for each field */
+type GeneratedHooks<S> = {
+  [K in keyof S as `use${Capitalize<string & K>}`]: SliceHook<S[K]>;
 };
+
+/** Domain hook for the entire slice state */
+interface SliceDomainHook<S> {
+  (): [S, (value: Partial<S> | ((prev: S) => Partial<S>)) => void, (value: S) => void];
+  select: (state: any) => S;
+  update: (value: Partial<S> | ((prev: S) => Partial<S>)) => Action;
+}
+
+// ============================================================================
+// Selector Types
+// ============================================================================
+
+/** Generate selector types from initial state - creates selectFieldName for each field */
+type GeneratedSelectors<S> = {
+  [K in keyof S as `select${Capitalize<string & K>}`]: (state: any) => S[K];
+} & {
+  selectDomain: (state: any) => S;
+};
+
+// ============================================================================
+// Action Types
+// ============================================================================
+
+/** Generate setter action types from initial state - creates setFieldName for each field */
+type GeneratedSetterActions<S> = {
+  [K in keyof S as `set${Capitalize<string & K>}`]: (payload: S[K]) => PayloadAction<S[K]>;
+};
+
+/** Slice-level setter action */
+type SliceSetterAction<S> = (payload: Partial<S>) => PayloadAction<Partial<S>>;
+
+/** Extract action types from custom reducers */
+type CustomReducerActions<R> = {
+  [K in keyof R]: R[K] extends CaseReducer<any, infer A>
+    ? A extends PayloadAction<infer P>
+      ? (payload: P) => PayloadAction<P>
+      : () => Action<string>
+    : never;
+};
+
+// ============================================================================
+// Extended Slice Type
+// ============================================================================
+
+/** Extended slice with hooks, selectors, and properly typed actions */
+interface ExtendedSlice<
+  S extends Record<string, any> = Record<string, any>,
+  CustomReducers extends Record<string, CaseReducer<S, any>> = {}
+> extends Omit<Slice<S>, 'actions'> {
+  name: string;
+  reducer: Reducer<S>;
+  actions: GeneratedSetterActions<S> &
+    CustomReducerActions<CustomReducers> &
+    { setSlice: SliceSetterAction<S>; __override__slice__caution: (payload: S) => PayloadAction<S> };
+  selectors: GeneratedSelectors<S>;
+  hooks: GeneratedHooks<S> & { useSlice: SliceDomainHook<S> };
+  getInitialState: () => S;
+}
+
+// ============================================================================
+// Configure Options Types
+// ============================================================================
+
+/** Configuration options for the store - reducer is NOT required */
+interface AstroglideConfigureOptions {
+  middleware?: any;
+  devTools?: boolean;
+  preloadedState?: any;
+  enhancers?: any;
+  [key: string]: any; // Allow static reducers to be passed
+}
+
+// ============================================================================
+// RTK Config Types
+// ============================================================================
+
+/** RTK-compatible configuration for custom reducers */
+interface RtkConfig<S, R extends Record<string, CaseReducer<S, any>> = {}> {
+  reducers?: R;
+  extraReducers?: any;
+  selectors?: Record<string, (state: S) => any>;
+}
+
+/** Astroglide-specific configuration overrides */
+interface AstroglideConfig {
+  // Add any astroglide-specific config options here
+}
+
+// ============================================================================
+// Configure Result Type
+// ============================================================================
+
+/** Result returned from configure() */
+interface ConfigureResult {
+  store: Store;
+
+  /** Create a slice with simple form: createSlice("name", initialState) */
+  createSlice<S extends Record<string, any>>(
+    name: string,
+    initialState: S
+  ): ExtendedSlice<S>;
+
+  /** Create a slice with RTK config: createSlice("name", initialState, { reducers }) */
+  createSlice<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>>>(
+    name: string,
+    initialState: S,
+    rtkConfig: RtkConfig<S, R>
+  ): ExtendedSlice<S, R>;
+
+  /** Create a slice with RTK-compatible object form: createSlice({ name, initialState }) */
+  createSlice<S extends Record<string, any>>(
+    config: { name: string; initialState: S }
+  ): ExtendedSlice<S>;
+
+  /** Create a slice with RTK-compatible object form and reducers: createSlice({ name, initialState }, {}, { reducers }) */
+  createSlice<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>>>(
+    config: { name: string; initialState: S },
+    _unused: any,
+    rtkConfig: RtkConfig<S, R>
+  ): ExtendedSlice<S, R>;
+
+  /** Alias for createSlice */
+  astroglide: ConfigureResult['createSlice'];
+
+  injectReducer: (key: string, reducer: Reducer) => void;
+  injectSlice: (slice: Slice | ExtendedSlice<any>) => void;
+  injectMiddleware: typeof injectMiddleware;
+}
 
 export const configure = ({
   middleware,
@@ -31,10 +194,17 @@ export const configure = ({
   preloadedState,
   enhancers,
   ...staticReducers
-}: ConfigureStoreOptions) => {
+}: AstroglideConfigureOptions = {}): ConfigureResult => {
+  // Add a placeholder reducer if no static reducers provided
+  // This prevents combineReducers({}) from throwing an error
+  const hasStaticReducers = Object.keys(staticReducers).length > 0;
+  const initialReducers = hasStaticReducers
+    ? staticReducers
+    : { __astroglide_init__: (state: any = {}) => state };
+
   const store = configureStore({
     // @ts-ignore-next-line
-    reducer: combineReducers(staticReducers),
+    reducer: combineReducers(initialReducers),
     middleware: (getDefaultMiddleware) => [
       ...(typeof middleware === "function"
         ? middleware(getDefaultMiddleware)
@@ -48,10 +218,10 @@ export const configure = ({
 
   const { makePropertySelectorsFromSlice } = configureSelectors(store);
 
-  const injectSlice = (slice) => _injectSlice(store, staticReducers, slice);
+  const injectSlice = (slice) => _injectSlice(store, initialReducers, slice);
 
   const injectReducer = (key, asyncReducer) => {
-    return _injectReducer(store, staticReducers, key, asyncReducer);
+    return _injectReducer(store, initialReducers, key, asyncReducer);
   };
 
   type PluginData = {
@@ -59,11 +229,14 @@ export const configure = ({
     plugin: any;
   };
 
-  const createAutomatedSlice = (sliceConfig, rtkConfig) => {
+  const createAutomatedSlice = <S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>> = {}>(
+    sliceConfig: { name: string; initialState: S; reducers?: R },
+    rtkConfig: RtkConfig<S, R> = {}
+  ): ExtendedSlice<S, R> => {
     const pluginData: object = {};
 
     map(sliceConfig.initialState, (_item, key) => {
-      let item = _item; // cache it here to pull item -> value -> value -> value if multiple plugins are used...
+      let item: any = _item; // cache it here to pull item -> value -> value -> value if multiple plugins are used...
 
       let foundIndex;
 
@@ -102,8 +275,8 @@ export const configure = ({
         });
       }
 
-      sliceConfig.initialState[key] = value;
-      pluginData[key] = activePlugins;
+      (sliceConfig.initialState as any)[key] = value;
+      (pluginData as any)[key] = activePlugins;
     });
 
     const setterReducers = makeSetterReducersFromInitialState(
@@ -137,7 +310,7 @@ export const configure = ({
         },
         ...(sliceConfig.reducers || {}),
       },
-    }) as ExtendedSlice;
+    }) as unknown as ExtendedSlice<S, R>;
 
     const { selectDomain, ...hooks } = makePropertySelectorsFromSlice(slice);
 
@@ -180,7 +353,7 @@ export const configure = ({
     hooks[domainHookKey].update = updateFn;
     /* eslint-enable react-hooks/rules-of-hooks */
 
-    slice.hooks = hooks;
+    slice.hooks = hooks as any;
 
     slice.selectors = {
       selectDomain,
@@ -191,33 +364,56 @@ export const configure = ({
         (a, b) => ({ ...a, ...b })
       ),
       ...(slice.selectors || {}), // RTK implemented selectors after astroglide was created, some people may not have them
-    };
+    } as any;
 
     injectSlice(slice);
 
     return slice;
   };
 
-  const astroglide = (
-    name: string | { name: string; initialState: object },
-    initialState: object,
-    rtkConfig: {} = {},
-    astroglideConfigOverrides = {}
-  ) => {
+  // Overload signatures for the astroglide/createSlice function
+  function astroglide<S extends Record<string, any>>(
+    name: string,
+    initialState: S
+  ): ExtendedSlice<S>;
+  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>>>(
+    name: string,
+    initialState: S,
+    rtkConfig: RtkConfig<S, R>
+  ): ExtendedSlice<S, R>;
+  function astroglide<S extends Record<string, any>>(
+    config: { name: string; initialState: S }
+  ): ExtendedSlice<S>;
+  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>>>(
+    config: { name: string; initialState: S },
+    _unused: any,
+    rtkConfig: RtkConfig<S, R>
+  ): ExtendedSlice<S, R>;
+  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>> = {}>(
+    name: string | { name: string; initialState: S },
+    initialState?: S | any,
+    rtkConfig: RtkConfig<S, R> | any = {},
+    astroglideConfigOverrides: any = {}
+  ): ExtendedSlice<S, R> {
     const shorthandParams = typeof name === "object";
 
-    const params = [
-      // @ts-ignore
-      ...(shorthandParams
-        ? [name, initialState, rtkConfig]
-        : [{ ...rtkConfig, name, initialState }]),
-
-      shorthandParams ? astroglideConfigOverrides : initialState,
-    ];
-
-    // @ts-ignore - params is dynamically constructed based on shorthand vs normal call
-    return createAutomatedSlice(...params);
-  };
+    if (shorthandParams) {
+      // RTK-compatible object form: createSlice({ name, initialState }, {}, { reducers })
+      const config = name as { name: string; initialState: S };
+      const rtk = rtkConfig as RtkConfig<S, R>;
+      return createAutomatedSlice<S, R>(
+        { ...config, reducers: rtk.reducers },
+        rtk
+      );
+    } else {
+      // Simple form: createSlice("name", initialState, { reducers })
+      const rtk = rtkConfig as RtkConfig<S, R>;
+      return createAutomatedSlice<S, R>(
+        { name: name as string, initialState: initialState as S, reducers: rtk.reducers },
+        rtk
+      );
+    }
+  }
 
   return {
     createSlice: astroglide,
@@ -226,5 +422,20 @@ export const configure = ({
     injectSlice,
     injectMiddleware,
     store,
-  };
+  } as ConfigureResult;
+};
+
+// Export types for consumer usage
+export type {
+  ExtendedSlice,
+  ConfigureResult,
+  AstroglideConfigureOptions,
+  RtkConfig,
+  AstroglideConfig,
+  SliceHook,
+  SliceDomainHook,
+  GeneratedHooks,
+  GeneratedSelectors,
+  GeneratedSetterActions,
+  HookReturn,
 };
