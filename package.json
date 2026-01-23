@@ -19,7 +19,6 @@
   },
   "license": "MIT",
   "author": "Dustin Schultz <dmanke@gmail.com>",
-  "type": "commonjs",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",

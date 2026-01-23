@@ -1,5 +1,5 @@
-import type { PluginClass, sliceConfig } from "../plugins.d";
-import type { Storage } from "./types.d";
+import type { PluginClass, sliceConfig } from "../plugins";
+import type { Storage } from "./types";
 
 const localStorage = (window || {}).localStorage;
 const isLocalStorageAvaialble = !!localStorage;

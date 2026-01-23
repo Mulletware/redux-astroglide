@@ -4,7 +4,7 @@ import type {
   setupConfig,
   getInitialValueConfig,
   updateConfig,
-} from "./plugins.d";
+} from "./plugins";
 
 export const plugin = ({
   constructor: constructorFn,
