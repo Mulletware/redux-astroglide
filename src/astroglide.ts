@@ -229,10 +229,7 @@ export const configure = ({
     plugin: any;
   };
 
-  const createAutomatedSlice = <S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>> = {}>(
-    sliceConfig: { name: string; initialState: S; reducers?: R },
-    rtkConfig: RtkConfig<S, R> = {}
-  ): ExtendedSlice<S, R> => {
+  const createAutomatedSlice = (sliceConfig, rtkConfig = {}) => {
     const pluginData: object = {};
 
     map(sliceConfig.initialState, (_item, key) => {
@@ -275,8 +272,8 @@ export const configure = ({
         });
       }
 
-      (sliceConfig.initialState as any)[key] = value;
-      (pluginData as any)[key] = activePlugins;
+      sliceConfig.initialState[key] = value;
+      pluginData[key] = activePlugins;
     });
 
     const setterReducers = makeSetterReducersFromInitialState(
@@ -310,7 +307,7 @@ export const configure = ({
         },
         ...(sliceConfig.reducers || {}),
       },
-    }) as unknown as ExtendedSlice<S, R>;
+    }) as unknown as ExtendedSlice;
 
     const { selectDomain, ...hooks } = makePropertySelectorsFromSlice(slice);
 
@@ -389,30 +386,26 @@ export const configure = ({
     _unused: any,
     rtkConfig: RtkConfig<S, R>
   ): ExtendedSlice<S, R>;
-  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>> = {}>(
-    name: string | { name: string; initialState: S },
-    initialState?: S | any,
-    rtkConfig: RtkConfig<S, R> | any = {},
+  function astroglide(
+    name: string | { name: string; initialState: any },
+    initialState: any = {},
+    rtkConfig: any = {},
     astroglideConfigOverrides: any = {}
-  ): ExtendedSlice<S, R> {
+  ): ExtendedSlice<any, any> {
     const shorthandParams = typeof name === "object";
 
-    if (shorthandParams) {
-      // RTK-compatible object form: createSlice({ name, initialState }, {}, { reducers })
-      const config = name as { name: string; initialState: S };
-      const rtk = rtkConfig as RtkConfig<S, R>;
-      return createAutomatedSlice<S, R>(
-        { ...config, reducers: rtk.reducers },
-        rtk
-      );
-    } else {
-      // Simple form: createSlice("name", initialState, { reducers })
-      const rtk = rtkConfig as RtkConfig<S, R>;
-      return createAutomatedSlice<S, R>(
-        { name: name as string, initialState: initialState as S, reducers: rtk.reducers },
-        rtk
-      );
-    }
+    // Restore original parameter passing logic exactly
+    const params = [
+      // @ts-ignore
+      ...(shorthandParams
+        ? [name, initialState, rtkConfig]
+        : [{ ...rtkConfig, name, initialState }]),
+
+      shorthandParams ? astroglideConfigOverrides : initialState,
+    ];
+
+    // @ts-ignore - params is dynamically constructed based on shorthand vs normal call
+    return createAutomatedSlice(...params);
   }
 
   return {
