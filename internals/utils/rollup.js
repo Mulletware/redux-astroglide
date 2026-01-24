@@ -53,11 +53,26 @@ export const makeExportedPackage = (name, pkgConfig = pkg) => {
     },
     {
       input: path,
+      external: [
+        Object.keys(pkgConfig.dependencies || {}),
+        Object.keys(pkgConfig.peerDependencies || {}),
+      ].flat(),
       output: [
         {
           name: name ? `${pkgConfig.name}/${name}` : pkgConfig.name,
           file: modifyOutputPath(pkgConfig.browser, name),
           format: "umd",
+          globals: {
+            react: "React",
+            "react-dom": "ReactDOM",
+            "react-redux": "ReactRedux",
+            redux: "Redux",
+            "@reduxjs/toolkit": "RTK",
+            "prop-types": "PropTypes",
+            lodash: "_",
+            "redux-injectable-middleware": "ReduxInjectableMiddleware",
+            "check-prop-types": "checkPropTypes",
+          },
         },
       ],
       plugins,
