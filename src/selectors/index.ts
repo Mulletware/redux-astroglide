@@ -1,21 +1,26 @@
 import { useSelector, shallowEqual } from "react-redux";
-import { createDraftSafeSelector as createSelector } from "@reduxjs/toolkit";
+import { createDraftSafeSelector as createSelector, Store } from "@reduxjs/toolkit";
 import { useAction } from "../actions";
 import { getSetterActionName } from "../reducers";
 import get from "lodash/get";
 import upperFirst from "lodash/upperFirst";
-import type { Action, Selector } from "@reduxjs/toolkit";
+import type { Selector } from "@reduxjs/toolkit";
 
-export const makeSelectorHook = (selector) => () =>
+type SelectorFunction<T = any> = (state: any) => T;
+type SelectorFactory<T = any> = (args: any) => SelectorFunction<T>;
+type EndpointLike = { select: () => SelectorFunction };
+type SliceLike = { name: string; getInitialState: () => any; actions: Record<string, any> };
+
+export const makeSelectorHook = <T>(selector: SelectorFunction<T>) => () =>
   useSelector(selector, shallowEqual);
 
-export const makeSelectorFactoryHook = (selectorFactory) => (args) =>
+export const makeSelectorFactoryHook = <T>(selectorFactory: SelectorFactory<T>) => (args: any) =>
   // a selector factory is used when the selector requires args
   //  this factory produces a function that accepts those arguments
   useSelector(selectorFactory(args), shallowEqual);
 
 export const createSelectorUpdateHook =
-  (selector: Selector, action: Action) => () =>
+  (selector: Selector, action: any) => () =>
     [useSelector(selector), useAction(action, undefined)];
 
 export const createSelectorHook = (...args: [any]) => {
@@ -28,30 +33,30 @@ export const createSelectorHook = (...args: [any]) => {
   return hook;
 };
 
-export const makeQuerySelectors = (endpoint, defaultValue) => {
+export const makeQuerySelectors = <T>(endpoint: EndpointLike, defaultValue: T) => {
   // a data selector is used when loading state is irrelevant
   const selector = endpoint.select();
   const dataSelector = createSelector(
     selector,
-    ({ data, ...rest }) => data || defaultValue
+    ({ data }: { data?: T }) => data || defaultValue
   );
 
   return [selector, dataSelector];
 };
 
-export const dataSelector = ({ data }) => data;
+export const dataSelector = ({ data }: { data: any }) => data;
 
-export const configure = (store) => {
-  const makeDomainSelector = (name, initialState) => (state) =>
+export const configure = (store: Store) => {
+  const makeDomainSelector = <T>(name: string, initialState: T) => (state: Record<string, any>): T =>
     state?.[name] || initialState;
 
-  const makeDomainSelectorFromSlice = (slice) =>
+  const makeDomainSelectorFromSlice = (slice: SliceLike) =>
     makeDomainSelector(slice.name, slice.getInitialState());
 
-  const selectProp = (name: string, defaultValue?: any) => (substate) =>
+  const selectProp = (name: string, defaultValue?: any) => (substate: any) =>
     get(substate, name, defaultValue);
 
-  const makePropertySelectorHookFactory = (baseSelector, slice) => (names) => {
+  const makePropertySelectorHookFactory = (baseSelector: SelectorFunction, slice: SliceLike) => (names: string | string[]) => {
     // to be used in conjunction with singlePropReducer to mimic the useState api,
     //  but for individual pieces of redux state rather than component state
     // usage:
@@ -62,16 +67,15 @@ export const configure = (store) => {
     //  index.js:
     //   const [data, setData] = useMyData();
     if (Array.isArray(names)) {
-      return names.map((name) => makeReduxStateHook(name, baseSelector, slice));
+      return names.map((name: string) => makeReduxStateHook(name, baseSelector, slice));
     }
-    names = [names];
     return makeReduxStateHook(names, baseSelector, slice);
   };
 
-  const makeReduxStateHook = (name, baseSelector, slice) => {
-    const selector = createSelector(baseSelector, selectProp(name));
-    const actionName = getSetterActionName(name);
-    const updateAction = (...args) => {
+  const makeReduxStateHook = (name: string | string[], baseSelector: SelectorFunction, slice: SliceLike) => {
+    const selector = createSelector(baseSelector, selectProp(Array.isArray(name) ? name[0] : name));
+    const actionName = getSetterActionName(Array.isArray(name) ? name[0] : name);
+    const updateAction = (...args: any[]) => {
       let params = args;
 
       if (args.length === 1 && typeof args[0] === "function") {
@@ -87,9 +91,9 @@ export const configure = (store) => {
       throw Error(`Action ${slice.name}/${actionName} not defined`);
     }
 
-    const useState = (setterCb = (value) => value) => [
+    const useState: any = (setterCb: (value: any) => any = (value) => value) => [
       useSelector(selector),
-      useAction((value) => updateAction(setterCb(value)), undefined),
+      useAction((value: any) => updateAction(setterCb(value)), undefined),
     ];
 
     useState.select = selector;
@@ -98,27 +102,27 @@ export const configure = (store) => {
     return useState;
   };
 
-  const getHookName = (key) => `use${upperFirst(key)}`;
+  const getHookName = (key: string) => `use${upperFirst(key)}`;
 
   const makePropertySelectorHooksFromInitialState = (
-    baseSelector,
-    slice,
-    initialState
+    baseSelector: SelectorFunction,
+    slice: SliceLike,
+    initialState: Record<string, any>
   ) => {
     const selectorHooksFactory = makePropertySelectorHookFactory(
       baseSelector,
       slice
     );
-    const selectorHooksObject = {};
+    const selectorHooksObject: Record<string, any> = {};
 
-    Object.keys(initialState).forEach((key, i) => {
+    Object.keys(initialState).forEach((key) => {
       selectorHooksObject[getHookName(key)] = selectorHooksFactory(key);
     });
 
     return selectorHooksObject;
   };
 
-  const makePropertySelectorsFromSlice = (slice) => {
+  const makePropertySelectorsFromSlice = (slice: SliceLike) => {
     const selectDomain = makeDomainSelectorFromSlice(slice);
     return {
       selectDomain,

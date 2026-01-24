@@ -1,22 +1,22 @@
 import type { PluginClass, sliceConfig } from "../plugins";
 import type { Storage } from "./types";
 
-const localStorage = (window || {}).localStorage;
-const isLocalStorageAvaialble = !!localStorage;
+const localStorage = (typeof window !== 'undefined' ? window : {} as any).localStorage as Storage | undefined;
+const isLocalStorageAvailable = !!localStorage;
 
 const PERSISTENCE_KEY = `astroglide-persist`;
 
-let defaultStorageType: Storage = localStorage;
+let defaultStorageType: Storage = localStorage as Storage;
 
-export const getPersistedStore = (storage: Storage = defaultStorageType) =>
+export const getPersistedStore = (storage: Storage = defaultStorageType): Record<string, any> =>
   JSON.parse(storage.getItem(PERSISTENCE_KEY) || "{}");
 
 export const storePersistedValue = (
   key: string,
   namespace?: string,
   value?: any,
-  storage: Storage = localStorage
-) => {
+  storage: Storage = localStorage as Storage
+): void => {
   const store = getPersistedStore(storage);
 
   if (namespace) {
@@ -37,7 +37,7 @@ export const getPersistedValue = (
   key: string,
   namespace?: string,
   _storage?: Storage
-) => {
+): any => {
   const storage = _storage || defaultStorageType;
   let scope = getPersistedStore(storage);
 
@@ -48,10 +48,17 @@ export const getPersistedValue = (
   return scope?.[key];
 };
 
+interface PersistPlugin {
+  storageType: Storage;
+  setup(plugin: PluginClass, context: { sliceConfig: sliceConfig }): { namespace: string; storageType: Storage };
+  getInitialValue(value: any, context: { sliceConfig: sliceConfig; key: string }): any;
+  update(value: any, context: { key: string; sliceConfig: sliceConfig }): any;
+}
+
 export default ({
   storageType = defaultStorageType,
-}: { storageType?: Storage } = {}) => {
-  if (!isLocalStorageAvaialble && !storageType) {
+}: { storageType?: Storage } = {}): PersistPlugin => {
+  if (!isLocalStorageAvailable && !storageType) {
     console.warn(
       "localStorage is not available! You must provide your own storage to persist"
     ); // eslint-disable-line no-console
@@ -60,6 +67,8 @@ export default ({
   defaultStorageType = storageType;
 
   return {
+    storageType,
+
     setup(plugin: PluginClass, { sliceConfig }: { sliceConfig: sliceConfig }) {
       return {
         namespace: sliceConfig.name,
@@ -67,7 +76,7 @@ export default ({
       };
     },
 
-    getInitialValue(value, { sliceConfig, key }) {
+    getInitialValue(value: any, { sliceConfig, key }: { sliceConfig: sliceConfig; key: string }) {
       const existingPersistedValue = getPersistedValue(
         key,
         sliceConfig.name,
@@ -83,14 +92,14 @@ export default ({
       return value;
     },
 
-    update(value, { key, sliceConfig }) {
+    update(value: any, { key, sliceConfig }: { key: string; sliceConfig: sliceConfig }) {
       storePersistedValue(
         key,
         sliceConfig.name,
         value,
         storageType !== undefined
           ? storageType
-          : this.config.storageType || defaultStorageType
+          : this.storageType || defaultStorageType
       );
 
       return value;

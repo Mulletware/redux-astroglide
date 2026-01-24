@@ -1,15 +1,34 @@
 import { checkProp } from "./types";
 
+type PropType = any;
+
+interface TypePluginConfig {
+  preventUpdate: boolean;
+}
+
+interface TypePlugin {
+  value: any;
+  propType: PropType;
+  config: TypePluginConfig;
+  constructor(propType: PropType, value: any, config?: Partial<TypePluginConfig>): void;
+  getInitialValue(value: any, context: { key: string; plugin: TypePlugin }): any;
+  update(value: any, context: { key: string; plugin: TypePlugin }): any;
+}
+
 export default (
   { preventUpdate }: { preventUpdate: boolean } = { preventUpdate: false }
-) => ({
-  constructor(propType, value, config = {}) {
+): TypePlugin => ({
+  value: undefined as any,
+  propType: undefined as PropType,
+  config: { preventUpdate: false },
+
+  constructor(propType: PropType, value: any, config: Partial<TypePluginConfig> = {}) {
     this.value = value; // value set here because constructor signature is different
     this.propType = propType;
     this.config = { ...this.config, ...config };
   },
 
-  getInitialValue(value, { key, plugin }) {
+  getInitialValue(value: any, { key, plugin }: { key: string; plugin: TypePlugin }) {
     const { propType } = plugin;
 
     checkProp(propType, value, key);
@@ -17,7 +36,7 @@ export default (
     return value;
   },
 
-  update(value, { key, plugin }) {
+  update(value: any, { key, plugin }: { key: string; plugin: TypePlugin }) {
     const { propType } = plugin;
 
     checkProp(
@@ -31,5 +50,4 @@ export default (
 
     return value;
   },
-  config: { preventUpdate: false },
 });

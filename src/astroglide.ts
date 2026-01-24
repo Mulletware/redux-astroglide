@@ -218,9 +218,9 @@ export const configure = ({
 
   const { makePropertySelectorsFromSlice } = configureSelectors(store);
 
-  const injectSlice = (slice) => _injectSlice(store, initialReducers, slice);
+  const injectSlice = (slice: Slice | ExtendedSlice<any>) => _injectSlice(store, initialReducers, slice);
 
-  const injectReducer = (key, asyncReducer) => {
+  const injectReducer = (key: string, asyncReducer: Reducer) => {
     return _injectReducer(store, initialReducers, key, asyncReducer);
   };
 
@@ -229,10 +229,10 @@ export const configure = ({
     plugin: any;
   };
 
-  const createAutomatedSlice = (sliceConfig, rtkConfig = {}) => {
-    const pluginData: object = {};
+  const createAutomatedSlice = (sliceConfig: { name: string; initialState: Record<string, any>; reducers?: Record<string, any> }, rtkConfig: Record<string, any> = {}) => {
+    const pluginData: Record<string, PluginData[]> = {};
 
-    map(sliceConfig.initialState, (_item, key) => {
+    map(sliceConfig.initialState, (_item: any, key: string) => {
       let item: any = _item; // cache it here to pull item -> value -> value -> value if multiple plugins are used...
 
       let foundIndex;
@@ -292,13 +292,13 @@ export const configure = ({
       ...sliceConfig,
       reducers: {
         ...setterReducers,
-        __override__slice__caution: (state, action) => action.payload,
-        [sliceSetterKey]: (state, action) => {
+        __override__slice__caution: (state: any, action: PayloadAction<any>) => action.payload,
+        [sliceSetterKey]: (state: Record<string, any>, action: PayloadAction<Record<string, any>>) => {
           for (const key in action.payload) {
             const actionType = `set${upperFirst(key)}`;
             const setter =
-              setterReducers[actionType] ||
-              ((_state, _action) => {
+              (setterReducers as Record<string, any>)[actionType] ||
+              ((_state: Record<string, any>, _action: PayloadAction<any>) => {
                 _state[key] = _action.payload;
               });
 
@@ -309,15 +309,15 @@ export const configure = ({
       },
     }) as unknown as ExtendedSlice;
 
-    const { selectDomain, ...hooks } = makePropertySelectorsFromSlice(slice);
+    const { selectDomain, ...hooks } = makePropertySelectorsFromSlice(slice) as { selectDomain: (state: any) => any } & Record<string, any>;
 
     let domainHookKey = "useSlice";
-    while (!!hooks[domainHookKey]) {
+    while (!!(hooks as Record<string, any>)[domainHookKey]) {
       // avoid naming conflicts in case initialState contains a "domain" property
       domainHookKey = domainHookKey.replace(/(^use)(.*)(Slice$)/, "$1$2_$3");
     }
 
-    const getParams = (...args) => {
+    const getParams = (...args: any[]) => {
       let params = args;
 
       if (args.length === 1 && typeof args[0] === "function") {
@@ -329,37 +329,37 @@ export const configure = ({
     };
 
     const updateFn = (...args: any[]) =>
-      slice.actions[sliceSetterKey](
+      (slice.actions as Record<string, any>)[sliceSetterKey](
         // call the modifier fn here
         // @ts-ignore
         ...getParams(...args)
       );
 
-    updateFn.toString = () => slice.actions[sliceSetterKey].toString();
+    updateFn.toString = () => (slice.actions as Record<string, any>)[sliceSetterKey].toString();
 
     /* eslint-disable react-hooks/rules-of-hooks */
-    hooks[domainHookKey] = () => {
+    (hooks as Record<string, any>)[domainHookKey] = () => {
       return [
         useSelector(selectDomain),
-        useAction(slice.actions[sliceSetterKey], undefined)(...getParams()), // prop updater
+        useAction((slice.actions as Record<string, any>)[sliceSetterKey], undefined)(...getParams()), // prop updater
         useAction(slice.actions.__override__slice__caution, undefined), // state overwriter
       ];
     };
 
-    hooks[domainHookKey].select = selectDomain;
-    hooks[domainHookKey].update = updateFn;
+    (hooks as Record<string, any>)[domainHookKey].select = selectDomain;
+    (hooks as Record<string, any>)[domainHookKey].update = updateFn;
     /* eslint-enable react-hooks/rules-of-hooks */
 
     slice.hooks = hooks as any;
 
     slice.selectors = {
-      selectDomain,
       ...reduce(
-        map(slice.hooks, (hook: any, key) => ({
+        map(slice.hooks, (hook: any, key: string) => ({
           [key.replace(/^use/, "select")]: hook.select,
         })),
         (a, b) => ({ ...a, ...b })
       ),
+      selectDomain,
       ...(slice.selectors || {}), // RTK implemented selectors after astroglide was created, some people may not have them
     } as any;
 
