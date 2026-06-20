@@ -357,6 +357,10 @@ addPlugins({
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
+Releases are automated via semantic-release on push to `main`. See
+[RELEASE.md](RELEASE.md) for the full publish process, including how commit messages
+map to version bumps.
+
 &nbsp;
 
 ## License
