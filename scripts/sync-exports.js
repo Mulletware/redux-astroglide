@@ -58,6 +58,13 @@ function generateExportsField(subpackages) {
 // "Cannot find module". Modern Node and bundlers keep using the `exports`
 // field; the proxies are a zero-cost fallback for older toolchains.
 function syncProxyPackages(subpackages) {
+  if (process.argv.includes("--check")) {
+    console.log(
+      "✓ Skipping proxy package.json generation (--check is read-only)"
+    );
+    return;
+  }
+
   let written = 0;
 
   for (const sub of subpackages) {
