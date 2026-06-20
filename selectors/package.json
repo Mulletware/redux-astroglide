@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "main": "../dist/selectors/index.js",
+  "module": "../dist/selectors/index.mjs",
+  "types": "../dist/types/selectors/index.d.ts"
+}

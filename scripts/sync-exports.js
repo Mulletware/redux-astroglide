@@ -47,6 +47,49 @@ function generateExportsField(subpackages) {
   return exports;
 }
 
+// These match the export subpaths. For every subpath we publish a tiny
+// `package.json` proxy at the package root (e.g. `plugins/persist/package.json`)
+// whose `main`/`module`/`types` fields point into `dist/`.
+//
+// Why: resolvers that predate the Node `exports` field (notably Jest 27, which
+// ships with Create React App / react-scripts 5) ignore `exports` and resolve
+// subpaths purely by filesystem lookup. Without these proxies a consumer doing
+// `import x from "redux-astroglide/plugins/persist"` under Jest 27 gets
+// "Cannot find module". Modern Node and bundlers keep using the `exports`
+// field; the proxies are a zero-cost fallback for older toolchains.
+function syncProxyPackages(subpackages) {
+  let written = 0;
+
+  for (const sub of subpackages) {
+    if (!sub) continue; // skip root package
+
+    const proxyDir = path.join(ROOT_DIR, sub);
+    const proxyPath = path.join(proxyDir, "package.json");
+
+    const cjsFile = path.join(ROOT_DIR, "dist", sub, "index.js");
+    const mjsFile = path.join(ROOT_DIR, "dist", sub, "index.mjs");
+    const typesFile = path.join(ROOT_DIR, "dist", "types", sub, "index.d.ts");
+
+    const proxy = {
+      private: true,
+      main: path.relative(proxyDir, cjsFile),
+      module: path.relative(proxyDir, mjsFile),
+    };
+
+    if (fs.existsSync(typesFile)) {
+      proxy.types = path.relative(proxyDir, typesFile);
+    }
+
+    fs.mkdirSync(proxyDir, { recursive: true });
+    fs.writeFileSync(proxyPath, JSON.stringify(proxy, null, 2) + "\n");
+    written += 1;
+  }
+
+  console.log(
+    `✓ Wrote ${written} proxy package.json file(s) for legacy resolvers`
+  );
+}
+
 function main() {
   const packageJson = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, "utf-8"));
   const newExports = generateExportsField(SUBPACKAGES);
@@ -56,6 +99,7 @@ function main() {
 
   if (currentExports === generatedExports) {
     console.log("✓ package.json exports field is already in sync");
+    syncProxyPackages(SUBPACKAGES);
     return;
   }
 
@@ -111,6 +155,9 @@ function main() {
   for (const [key, value] of Object.entries(newExports)) {
     console.log(`  ${key}`);
   }
+
+  // Keep legacy-resolver proxy package.json files in sync with the exports map.
+  syncProxyPackages(SUBPACKAGES);
 }
 
 main();

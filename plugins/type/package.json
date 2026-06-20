@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "main": "../../dist/plugins/type/index.js",
+  "module": "../../dist/plugins/type/index.mjs",
+  "types": "../../dist/types/plugins/type/index.d.ts"
+}

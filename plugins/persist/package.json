@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "main": "../../dist/plugins/persist/index.js",
+  "module": "../../dist/plugins/persist/index.mjs",
+  "types": "../../dist/types/plugins/persist/index.d.ts"
+}

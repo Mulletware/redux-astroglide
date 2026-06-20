@@ -108,6 +108,33 @@ function validateExports() {
     }
   }
 
+  // Validate legacy-resolver proxy package.json files (see sync-exports.js).
+  // These exist so Jest 27 / other resolvers that ignore `exports` can still
+  // resolve subpaths like "redux-astroglide/plugins/persist".
+  console.log("\nValidating legacy-resolver proxy package.json files...");
+  let proxyCount = 0;
+  for (const exportPath of Object.keys(packageJson.exports)) {
+    if (exportPath === ".") continue;
+    const sub = exportPath.replace(/^\.\//, "");
+    const proxyPath = path.join(ROOT_DIR, sub, "package.json");
+    if (!fs.existsSync(proxyPath)) {
+      errors.push(
+        `Proxy "${sub}/package.json" not found. Run 'npm run sync:exports' to generate it.`
+      );
+      continue;
+    }
+    const proxy = JSON.parse(fs.readFileSync(proxyPath, "utf-8"));
+    const mainTarget = path.join(ROOT_DIR, sub, proxy.main);
+    if (fs.existsSync(mainTarget)) {
+      console.log(`  ✓ ${sub}/package.json -> ${proxy.main}`);
+      proxyCount += 1;
+    } else {
+      errors.push(
+        `Proxy "${sub}/package.json" main target not found: ${proxy.main}`
+      );
+    }
+  }
+
   // Report results
   console.log("");
 
@@ -133,6 +160,9 @@ function validateExports() {
     `✓ All ${
       Object.keys(packageJson.exports).length
     } exports validated successfully`
+  );
+  console.log(
+    `✓ ${proxyCount} legacy-resolver proxy package.json file(s) validated`
   );
 }
 

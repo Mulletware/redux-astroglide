@@ -56,7 +56,9 @@
   "browser": "./dist/index.umd.js",
   "types": "./dist/types/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "plugins",
+    "selectors"
   ],
   "scripts": {
     "start": "BUILD_ENV=dev npm run build:js -- --watch",
