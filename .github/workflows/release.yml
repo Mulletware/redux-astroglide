@@ -16,6 +16,14 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    env:
+      # Disable husky for the entire CI job. Two reasons:
+      # 1. The `prepare` script (`husky install`) runs during `pnpm install` and
+      #    sets up hooks we never want firing in CI.
+      # 2. @semantic-release/git commits `chore(release): ... [skip ci]`; without
+      #    HUSKY=0 the commit-msg (commitlint) hook fires and fails because
+      #    commitlint can't be fetched in CI, crashing the release at prepare.
+      HUSKY: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
