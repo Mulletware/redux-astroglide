@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Mulletware/redux-astroglide/compare/v1.0.0...v1.0.1) (2026-06-21)
+
+
+### Bug Fixes
+
+* **release:** use NPM_TOKEN path instead of broken OIDC branch ([c95e6b9](https://github.com/Mulletware/redux-astroglide/commit/c95e6b9c7b1b6247d3a0a679d7d109dbc3924c1e))
+
 # 1.0.0 (2026-06-21)
 
 

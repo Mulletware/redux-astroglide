@@ -1,6 +1,6 @@
 {
   "name": "redux-astroglide",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Taking the pain out of redux state management",
   "keywords": [
     "redux",
