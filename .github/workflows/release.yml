@@ -10,11 +10,14 @@ on:
   # the current HEAD without crafting an empty commit.
   workflow_dispatch:
 
-# OIDC is required for npm Trusted Publishing (tokenless). contents:write lets
-# semantic-release push the release commit/tag and create the GitHub release.
+# contents:write lets semantic-release push the release commit/tag and create
+# the GitHub release. We deliberately do NOT grant id-token: write. With it
+# present, @semantic-release/npm@13's OIDC branch fires and short-circuits the
+# NPM_TOKEN path -- and its OIDC code discards the token, leaving the npmrc
+# empty (ENEEDAUTH at publish). Omitting id-token:write forces the plugin
+# down the working NPM_TOKEN (granular access token) path.
 permissions:
   contents: write
-  id-token: write
 
 jobs:
   release:
@@ -66,4 +69,5 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
