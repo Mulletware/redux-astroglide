@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/Mulletware/redux-astroglide/compare/v1.0.1...v1.1.0) (2026-07-03)
+
+
+### Features
+
+* **types:** infer runtime types from plugin wrappers ([a510d00](https://github.com/Mulletware/redux-astroglide/commit/a510d00ebddbb242f4cca8cdeb8f9741e371f243))
+
 ## [1.0.1](https://github.com/Mulletware/redux-astroglide/compare/v1.0.0...v1.0.1) (2026-06-21)
 
 
