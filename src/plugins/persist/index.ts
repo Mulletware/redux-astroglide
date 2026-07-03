@@ -1,4 +1,10 @@
-import type { PluginClass, sliceConfig } from "../plugins";
+import type {
+  AstroglidePluginValue,
+  PluginClass,
+  PluginFactoryBrand,
+  UnwrapPluginValue,
+  sliceConfig,
+} from "../plugins";
 import type { Storage } from "./types";
 
 const localStorage = (typeof window !== 'undefined' ? window : {} as any).localStorage as Storage | undefined;
@@ -33,11 +39,11 @@ export const storePersistedValue = (
   }
 };
 
-export const getPersistedValue = (
+export const getPersistedValue = <T = any>(
   key: string,
   namespace?: string,
   _storage?: Storage
-): any => {
+): T | undefined => {
   const storage = _storage || defaultStorageType;
   let scope = getPersistedStore(storage);
 
@@ -48,7 +54,21 @@ export const getPersistedValue = (
   return scope?.[key];
 };
 
-interface PersistPlugin {
+/** Spec container produced by the consumer-facing `persist(...)` factory. Type-level only. */
+export interface PersistPluginValue<V> extends AstroglidePluginValue<V> {}
+
+/**
+ * Consumer-facing factory signature for the persist plugin. Preserves the
+ * value type of whatever it wraps — a plain initial value or another plugin
+ * container (e.g. `persist(type(PropTypes.bool, false))` carries `boolean`).
+ */
+export interface PersistPluginFactory {
+  <T>(value: T, config?: { storageType?: Storage }): PersistPluginValue<
+    UnwrapPluginValue<T>
+  >;
+}
+
+interface PersistPlugin extends PluginFactoryBrand<PersistPluginFactory> {
   storageType: Storage;
   setup(plugin: PluginClass, context: { sliceConfig: sliceConfig }): { namespace: string; storageType: Storage };
   getInitialValue(value: any, context: { sliceConfig: sliceConfig; key: string }): any;

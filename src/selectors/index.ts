@@ -19,13 +19,31 @@ export const makeSelectorFactoryHook = <T>(selectorFactory: SelectorFactory<T>) 
   //  this factory produces a function that accepts those arguments
   useSelector(selectorFactory(args), shallowEqual);
 
-export const createSelectorUpdateHook =
-  (selector: Selector, action: any) => () =>
-    [useSelector(selector), useAction(action, undefined)];
+export const createSelectorUpdateHook = <R, A>(
+  selector: Selector<any, R>,
+  action: A & Parameters<typeof useAction>[0]
+) => (): [R, A] =>
+  [useSelector(selector), useAction(action, undefined)] as [R, A];
 
-export const createSelectorHook = (...args: [any]) => {
+/** A hook produced by createSelectorHook: callable in components, `.select`-able anywhere. */
+export interface CreatedSelectorHook<R> {
+  (): R;
+  select: (state: any) => R;
+}
+
+export const createSelectorHook = <
+  Inputs extends SelectorFunction[],
+  R
+>(
+  ...args: [
+    ...Inputs,
+    (...values: { [K in keyof Inputs]: ReturnType<Inputs[K]> }) => R
+  ]
+): CreatedSelectorHook<R> => {
   // creates a redux selector and a react hook that produce identical results
-  const selector: any = createSelector(...args);
+  // The generic signature above already validates `[...Inputs, combiner]`;
+  // cast the function so the variadic spread bypasses RTK's overload check.
+  const selector: any = (createSelector as any)(...args);
   const hook: any = makeSelectorHook(selector);
 
   hook.select = selector;
@@ -33,7 +51,7 @@ export const createSelectorHook = (...args: [any]) => {
   return hook;
 };
 
-export const makeQuerySelectors = <T>(endpoint: EndpointLike, defaultValue: T) => {
+export const makeQuerySelectors = <T>(endpoint: EndpointLike, defaultValue: T): [SelectorFunction, SelectorFunction<T>] => {
   // a data selector is used when loading state is irrelevant
   const selector = endpoint.select();
   const dataSelector = createSelector(

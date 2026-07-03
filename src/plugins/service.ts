@@ -1,6 +1,7 @@
 import type {
   PluginClass,
   PluginConfig,
+  PluginFactoryFor,
   setupConfig,
   getInitialValueConfig,
   updateConfig,
@@ -54,15 +55,19 @@ export const plugin = ({
   };
 };
 
-export const addPlugin = (config: PluginConfig) => {
+export const addPlugin = <C extends PluginConfig>(
+  config: C
+): PluginFactoryFor<C> => {
   const Class = plugin(config);
   plugins.push(Class);
 
-  return (...args: any[]) => new Class(...args);
+  return ((...args: any[]) => new Class(...args)) as PluginFactoryFor<C>;
 };
 
-export const addPlugins = (...configs: PluginConfig[]) =>
-  configs.map(addPlugin);
+export const addPlugins = <T extends PluginConfig[]>(
+  ...configs: T
+): { [K in keyof T]: PluginFactoryFor<T[K]> } =>
+  configs.map(addPlugin) as { [K in keyof T]: PluginFactoryFor<T[K]> };
 
 export const plugins: PluginClass[] = [];
 

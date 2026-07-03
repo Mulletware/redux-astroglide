@@ -22,11 +22,12 @@ import type {
   Slice,
   Reducer,
   Action,
-  Dispatch,
   Store,
   CaseReducer,
   PayloadAction,
 } from "@reduxjs/toolkit";
+
+import type { AstroglidePluginValue } from "./plugins/plugins";
 
 // ============================================================================
 // Utility Types
@@ -38,14 +39,42 @@ type Capitalize<S extends string> = S extends `${infer F}${infer R}`
   : S;
 
 // ============================================================================
+// Plugin Value Resolution
+// ============================================================================
+
+/**
+ * Unwrap plugin containers (recursively, for chained plugins like
+ * `persist(type(...))`) down to the runtime value type they carry.
+ * The `0 extends 1 & T` guard passes `any` through untouched so untyped
+ * specs keep their current behavior.
+ */
+type ResolvedValue<T> = 0 extends 1 & T
+  ? T
+  : T extends AstroglidePluginValue<infer V>
+  ? ResolvedValue<V>
+  : T;
+
+/**
+ * The runtime state shape for an initial-state spec: plugin-wrapped fields
+ * resolve to their carried value types; plain fields pass through.
+ */
+type ResolvedState<S> = {
+  [K in keyof S]: ResolvedValue<S[K]>;
+};
+
+// ============================================================================
 // Hook Types
 // ============================================================================
 
-/** Return type for hooks - [value, setter, extras] */
+/**
+ * The tuple a field hook returns when called: `[value, setter]`, mirroring
+ * `SliceHook<T>`'s call signature. (An earlier draft advertised a third
+ * element carrying `dispatch`/`toggle`, but those were never implemented at
+ * runtime and would crash if dereferenced — kept honest here.)
+ */
 type HookReturn<T> = [
   T,
   (value: T | ((prev: T) => T)) => void,
-  { dispatch: Dispatch; toggle?: T extends boolean ? () => void : never }
 ];
 
 /** A hook with static methods for non-component usage */
@@ -75,7 +104,12 @@ interface SliceDomainHook<S> {
 type GeneratedSelectors<S> = {
   [K in keyof S as `select${Capitalize<string & K>}`]: (state: any) => S[K];
 } & {
+  // Runtime derives selectors from hooks by rewriting `use` -> `select`, so the
+  // domain hook `useSlice` becomes `selectSlice`. `selectSlice` is therefore an
+  // always-present alias of `selectDomain` (both select the whole slice state)
+  // and is documented as a public export. Declared here so the type matches.
   selectDomain: (state: any) => S;
+  selectSlice: (state: any) => S;
 };
 
 // ============================================================================
@@ -159,26 +193,26 @@ interface ConfigureResult {
   createSlice<S extends Record<string, any>>(
     name: string,
     initialState: S
-  ): ExtendedSlice<S>;
+  ): ExtendedSlice<ResolvedState<S>>;
 
   /** Create a slice with RTK config: createSlice("name", initialState, { reducers }) */
-  createSlice<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>>>(
+  createSlice<S extends Record<string, any>, R extends Record<string, CaseReducer<ResolvedState<S>, any>>>(
     name: string,
     initialState: S,
-    rtkConfig: RtkConfig<S, R>
-  ): ExtendedSlice<S, R>;
+    rtkConfig: RtkConfig<ResolvedState<S>, R>
+  ): ExtendedSlice<ResolvedState<S>, R>;
 
   /** Create a slice with RTK-compatible object form: createSlice({ name, initialState }) */
   createSlice<S extends Record<string, any>>(
     config: { name: string; initialState: S }
-  ): ExtendedSlice<S>;
+  ): ExtendedSlice<ResolvedState<S>>;
 
   /** Create a slice with RTK-compatible object form and reducers: createSlice({ name, initialState }, {}, { reducers }) */
-  createSlice<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>>>(
+  createSlice<S extends Record<string, any>, R extends Record<string, CaseReducer<ResolvedState<S>, any>>>(
     config: { name: string; initialState: S },
     _unused: any,
-    rtkConfig: RtkConfig<S, R>
-  ): ExtendedSlice<S, R>;
+    rtkConfig: RtkConfig<ResolvedState<S>, R>
+  ): ExtendedSlice<ResolvedState<S>, R>;
 
   /** Alias for createSlice */
   astroglide: ConfigureResult['createSlice'];
@@ -372,20 +406,20 @@ export const configure = ({
   function astroglide<S extends Record<string, any>>(
     name: string,
     initialState: S
-  ): ExtendedSlice<S>;
-  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>>>(
+  ): ExtendedSlice<ResolvedState<S>>;
+  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<ResolvedState<S>, any>>>(
     name: string,
     initialState: S,
-    rtkConfig: RtkConfig<S, R>
-  ): ExtendedSlice<S, R>;
+    rtkConfig: RtkConfig<ResolvedState<S>, R>
+  ): ExtendedSlice<ResolvedState<S>, R>;
   function astroglide<S extends Record<string, any>>(
     config: { name: string; initialState: S }
-  ): ExtendedSlice<S>;
-  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<S, any>>>(
+  ): ExtendedSlice<ResolvedState<S>>;
+  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<ResolvedState<S>, any>>>(
     config: { name: string; initialState: S },
     _unused: any,
-    rtkConfig: RtkConfig<S, R>
-  ): ExtendedSlice<S, R>;
+    rtkConfig: RtkConfig<ResolvedState<S>, R>
+  ): ExtendedSlice<ResolvedState<S>, R>;
   function astroglide(
     name: string | { name: string; initialState: any },
     initialState: any = {},
@@ -420,6 +454,8 @@ export const configure = ({
 
 // Export types for consumer usage
 export type {
+  ResolvedValue,
+  ResolvedState,
   ExtendedSlice,
   ConfigureResult,
   AstroglideConfigureOptions,

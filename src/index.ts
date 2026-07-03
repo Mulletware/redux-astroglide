@@ -6,6 +6,8 @@ export { plugins, addPlugin, addPlugins } from "./plugins/service";
 
 // Re-export types for consumer usage
 export type {
+  ResolvedValue,
+  ResolvedState,
   ExtendedSlice,
   ConfigureResult,
   AstroglideConfigureOptions,
