@@ -3,10 +3,7 @@ import map from "lodash/map";
 import reduce from "lodash/reduce";
 import upperFirst from "lodash/upperFirst";
 import { useSelector } from "react-redux";
-import {
-  injectableMiddleware,
-  injectMiddleware,
-} from "redux-injectable-middleware";
+import * as rIMStar from "redux-injectable-middleware";
 import { useAction } from "./actions";
 
 import {
@@ -28,6 +25,16 @@ import type {
 } from "@reduxjs/toolkit";
 
 import type { AstroglidePluginValue } from "./plugins/plugins";
+
+// Universal CJS interop for redux-injectable-middleware: its 1.0.5 webpack CJS
+// build registers named exports at runtime (invisible to Node's
+// cjs-module-lexer), so a named import breaks native ESM consumers. The
+// default-binding shape depends on the loader: native ESM and the rollup
+// builds expose module.exports (1.1.0+ an explicit `.default`) via
+// `namespace.default`, while ts-jest's CJS emit binds the namespace to the raw
+// `require` result — reconcile both before destructuring.
+const rIM = ((rIMStar as any).default ?? rIMStar) as typeof rIMStar;
+const { injectableMiddleware, injectMiddleware } = rIM;
 
 // ============================================================================
 // Utility Types
@@ -72,10 +79,7 @@ type ResolvedState<S> = {
  * element carrying `dispatch`/`toggle`, but those were never implemented at
  * runtime and would crash if dereferenced — kept honest here.)
  */
-type HookReturn<T> = [
-  T,
-  (value: T | ((prev: T) => T)) => void,
-];
+type HookReturn<T> = [T, (value: T | ((prev: T) => T)) => void];
 
 /** A hook with static methods for non-component usage */
 interface SliceHook<T> {
@@ -91,7 +95,11 @@ type GeneratedHooks<S> = {
 
 /** Domain hook for the entire slice state */
 interface SliceDomainHook<S> {
-  (): [S, (value: Partial<S> | ((prev: S) => Partial<S>)) => void, (value: S) => void];
+  (): [
+    S,
+    (value: Partial<S> | ((prev: S) => Partial<S>)) => void,
+    (value: S) => void
+  ];
   select: (state: any) => S;
   update: (value: Partial<S> | ((prev: S) => Partial<S>)) => Action;
 }
@@ -118,7 +126,9 @@ type GeneratedSelectors<S> = {
 
 /** Generate setter action types from initial state - creates setFieldName for each field */
 type GeneratedSetterActions<S> = {
-  [K in keyof S as `set${Capitalize<string & K>}`]: (payload: S[K]) => PayloadAction<S[K]>;
+  [K in keyof S as `set${Capitalize<string & K>}`]: (
+    payload: S[K]
+  ) => PayloadAction<S[K]>;
 };
 
 /** Slice-level setter action */
@@ -141,12 +151,14 @@ type CustomReducerActions<R> = {
 interface ExtendedSlice<
   S extends Record<string, any> = Record<string, any>,
   CustomReducers extends Record<string, CaseReducer<S, any>> = {}
-> extends Omit<Slice<S>, 'actions'> {
+> extends Omit<Slice<S>, "actions"> {
   name: string;
   reducer: Reducer<S>;
   actions: GeneratedSetterActions<S> &
-    CustomReducerActions<CustomReducers> &
-    { setSlice: SliceSetterAction<S>; __override__slice__caution: (payload: S) => PayloadAction<S> };
+    CustomReducerActions<CustomReducers> & {
+      setSlice: SliceSetterAction<S>;
+      __override__slice__caution: (payload: S) => PayloadAction<S>;
+    };
   selectors: GeneratedSelectors<S>;
   hooks: GeneratedHooks<S> & { useSlice: SliceDomainHook<S> };
   getInitialState: () => S;
@@ -196,26 +208,33 @@ interface ConfigureResult {
   ): ExtendedSlice<ResolvedState<S>>;
 
   /** Create a slice with RTK config: createSlice("name", initialState, { reducers }) */
-  createSlice<S extends Record<string, any>, R extends Record<string, CaseReducer<ResolvedState<S>, any>>>(
+  createSlice<
+    S extends Record<string, any>,
+    R extends Record<string, CaseReducer<ResolvedState<S>, any>>
+  >(
     name: string,
     initialState: S,
     rtkConfig: RtkConfig<ResolvedState<S>, R>
   ): ExtendedSlice<ResolvedState<S>, R>;
 
   /** Create a slice with RTK-compatible object form: createSlice({ name, initialState }) */
-  createSlice<S extends Record<string, any>>(
-    config: { name: string; initialState: S }
-  ): ExtendedSlice<ResolvedState<S>>;
+  createSlice<S extends Record<string, any>>(config: {
+    name: string;
+    initialState: S;
+  }): ExtendedSlice<ResolvedState<S>>;
 
   /** Create a slice with RTK-compatible object form and reducers: createSlice({ name, initialState }, {}, { reducers }) */
-  createSlice<S extends Record<string, any>, R extends Record<string, CaseReducer<ResolvedState<S>, any>>>(
+  createSlice<
+    S extends Record<string, any>,
+    R extends Record<string, CaseReducer<ResolvedState<S>, any>>
+  >(
     config: { name: string; initialState: S },
     _unused: any,
     rtkConfig: RtkConfig<ResolvedState<S>, R>
   ): ExtendedSlice<ResolvedState<S>, R>;
 
   /** Alias for createSlice */
-  astroglide: ConfigureResult['createSlice'];
+  astroglide: ConfigureResult["createSlice"];
 
   injectReducer: (key: string, reducer: Reducer) => void;
   injectSlice: (slice: Slice | ExtendedSlice<any>) => void;
@@ -252,7 +271,8 @@ export const configure = ({
 
   const { makePropertySelectorsFromSlice } = configureSelectors(store);
 
-  const injectSlice = (slice: Slice | ExtendedSlice<any>) => _injectSlice(store, initialReducers, slice);
+  const injectSlice = (slice: Slice | ExtendedSlice<any>) =>
+    _injectSlice(store, initialReducers, slice);
 
   const injectReducer = (key: string, asyncReducer: Reducer) => {
     return _injectReducer(store, initialReducers, key, asyncReducer);
@@ -263,7 +283,14 @@ export const configure = ({
     plugin: any;
   };
 
-  const createAutomatedSlice = (sliceConfig: { name: string; initialState: Record<string, any>; reducers?: Record<string, any> }, rtkConfig: Record<string, any> = {}) => {
+  const createAutomatedSlice = (
+    sliceConfig: {
+      name: string;
+      initialState: Record<string, any>;
+      reducers?: Record<string, any>;
+    },
+    rtkConfig: Record<string, any> = {}
+  ) => {
     const pluginData: Record<string, PluginData[]> = {};
 
     map(sliceConfig.initialState, (_item: any, key: string) => {
@@ -326,8 +353,12 @@ export const configure = ({
       ...sliceConfig,
       reducers: {
         ...setterReducers,
-        __override__slice__caution: (state: any, action: PayloadAction<any>) => action.payload,
-        [sliceSetterKey]: (state: Record<string, any>, action: PayloadAction<Record<string, any>>) => {
+        __override__slice__caution: (state: any, action: PayloadAction<any>) =>
+          action.payload,
+        [sliceSetterKey]: (
+          state: Record<string, any>,
+          action: PayloadAction<Record<string, any>>
+        ) => {
           for (const key in action.payload) {
             const actionType = `set${upperFirst(key)}`;
             const setter =
@@ -343,7 +374,9 @@ export const configure = ({
       },
     }) as unknown as ExtendedSlice;
 
-    const { selectDomain, ...hooks } = makePropertySelectorsFromSlice(slice) as { selectDomain: (state: any) => any } & Record<string, any>;
+    const { selectDomain, ...hooks } = makePropertySelectorsFromSlice(
+      slice
+    ) as { selectDomain: (state: any) => any } & Record<string, any>;
 
     let domainHookKey = "useSlice";
     while (!!(hooks as Record<string, any>)[domainHookKey]) {
@@ -369,13 +402,17 @@ export const configure = ({
         ...getParams(...args)
       );
 
-    updateFn.toString = () => (slice.actions as Record<string, any>)[sliceSetterKey].toString();
+    updateFn.toString = () =>
+      (slice.actions as Record<string, any>)[sliceSetterKey].toString();
 
     /* eslint-disable react-hooks/rules-of-hooks */
     (hooks as Record<string, any>)[domainHookKey] = () => {
       return [
         useSelector(selectDomain),
-        useAction((slice.actions as Record<string, any>)[sliceSetterKey], undefined)(...getParams()), // prop updater
+        useAction(
+          (slice.actions as Record<string, any>)[sliceSetterKey],
+          undefined
+        )(...getParams()), // prop updater
         useAction(slice.actions.__override__slice__caution, undefined), // state overwriter
       ];
     };
@@ -407,15 +444,22 @@ export const configure = ({
     name: string,
     initialState: S
   ): ExtendedSlice<ResolvedState<S>>;
-  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<ResolvedState<S>, any>>>(
+  function astroglide<
+    S extends Record<string, any>,
+    R extends Record<string, CaseReducer<ResolvedState<S>, any>>
+  >(
     name: string,
     initialState: S,
     rtkConfig: RtkConfig<ResolvedState<S>, R>
   ): ExtendedSlice<ResolvedState<S>, R>;
-  function astroglide<S extends Record<string, any>>(
-    config: { name: string; initialState: S }
-  ): ExtendedSlice<ResolvedState<S>>;
-  function astroglide<S extends Record<string, any>, R extends Record<string, CaseReducer<ResolvedState<S>, any>>>(
+  function astroglide<S extends Record<string, any>>(config: {
+    name: string;
+    initialState: S;
+  }): ExtendedSlice<ResolvedState<S>>;
+  function astroglide<
+    S extends Record<string, any>,
+    R extends Record<string, CaseReducer<ResolvedState<S>, any>>
+  >(
     config: { name: string; initialState: S },
     _unused: any,
     rtkConfig: RtkConfig<ResolvedState<S>, R>
