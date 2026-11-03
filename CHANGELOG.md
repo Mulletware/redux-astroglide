@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Mulletware/redux-astroglide/compare/v1.1.0...v1.1.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* default-import redux-injectable-middleware so native ESM works without bundler interop ([bca28ae](https://github.com/Mulletware/redux-astroglide/commit/bca28ae9101f6796dc77ccdec0e562a52f16581f))
+
 # [1.1.0](https://github.com/Mulletware/redux-astroglide/compare/v1.0.1...v1.1.0) (2026-07-03)
 
 
