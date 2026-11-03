@@ -11,13 +11,14 @@ on:
   workflow_dispatch:
 
 # contents:write lets semantic-release push the release commit/tag and create
-# the GitHub release. We deliberately do NOT grant id-token: write. With it
-# present, @semantic-release/npm@13's OIDC branch fires and short-circuits the
-# NPM_TOKEN path -- and its OIDC code discards the token, leaving the npmrc
-# empty (ENEEDAUTH at publish). Omitting id-token:write forces the plugin
-# down the working NPM_TOKEN (granular access token) path.
+# the GitHub release. id-token:write is REQUIRED for npm Trusted Publishing:
+# @semantic-release/npm probes npm's OIDC exchange endpoint during verify, and
+# the publish itself relies on npm CLI's native trusted publishing (npm >= 11.5,
+# bundled with Node 24). The June ENEEDAUTH was Node 22's bundled npm 10 lacking
+# native OIDC -- not a reason to return to long-lived tokens.
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -45,7 +46,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Node 24 bundles npm 11.x, whose `npm publish` natively performs the
+          # OIDC exchange for Trusted Publishing. Do NOT downgrade to a Node
+          # bundling npm < 11.5 (Node 22 bundles 10.9): verify will pass but
+          # publish will fail with ENEEDAUTH.
+          node-version: 24
           cache: "pnpm"
 
       - name: Install dependencies
@@ -69,5 +74,4 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
